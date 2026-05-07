@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { Search, ArrowUpDown, Filter, X, Users, Plus, EyeOff } from 'lucide-react';
 import { typeConfig, statusConfig, StatusBadge, entityTypeOrder, sortOptions, applySorting, isEntityUnmanaged, managementModeConfig } from './config';
 import useClickOutside from './useClickOutside';
@@ -83,7 +83,7 @@ const inverseTileFg = {
   customer: 'text-green-700 dark:text-green-300',
 };
 
-function EntityRow({ entity, onDrillDown, onSelect, isSelected, isEven, ancestorPath, onTeleport, fullPath, selectOnRowClick = false }) {
+function EntityRowImpl({ entity, onDrillDown, onSelect, isSelected, isEven, ancestorPath, onTeleport, fullPath, selectOnRowClick = false }) {
   const rowRef = useRef(null);
   const { Icon, color, bg } = typeConfig[entity.type];
   const isLeaf = entity.type === 'customer';
@@ -128,10 +128,10 @@ function EntityRow({ entity, onDrillDown, onSelect, isSelected, isEven, ancestor
     <div
       ref={rowRef}
       onClick={handleClick}
-      className={`group/row flex items-center gap-2.5 px-3 ${hasAnnotation ? 'py-2' : 'h-10'} border-b border-zinc-100 dark:border-zinc-800 cursor-pointer transition-[background-color,border-color] duration-100 ease-out ${
+      className={`group/row relative flex items-center gap-2.5 px-3 ${hasAnnotation ? 'py-2' : 'h-10'} border-b border-zinc-100 dark:border-zinc-800 cursor-pointer transition-[background-color] duration-75 ease-out ${
         isSelected
           ? 'bg-white dark:bg-zinc-900 border-l-2 border-l-zinc-900 dark:border-l-zinc-100'
-          : `border-l-2 border-l-transparent hover:border-l-zinc-400 dark:hover:border-l-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 ${isEven ? 'bg-zinc-100 dark:bg-zinc-800/60' : 'bg-zinc-50 dark:bg-zinc-900/40'}`
+          : `border-l-2 border-l-transparent hover:border-l-zinc-300 dark:hover:border-l-zinc-600 hover:bg-white dark:hover:bg-zinc-900 ${isEven ? 'bg-zinc-100/70 dark:bg-zinc-900/40' : 'bg-zinc-50/60 dark:bg-zinc-900/20'}`
       }`}
     >
       <div className={`relative w-6 h-6 rounded-md ${tileBg} flex items-center justify-center flex-shrink-0`}>
@@ -154,39 +154,58 @@ function EntityRow({ entity, onDrillDown, onSelect, isSelected, isEven, ancestor
           </span>
         )}
       </div>
-      {isEntityUnmanaged(entity) && (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700 text-white text-[10px] font-medium leading-none flex-shrink-0">
-          <EyeOff className="w-2.5 h-2.5" />
-          Unmanaged
+      {/* Right-side metadata (unmanaged label, status, child counts) —
+          fades out on hover so the row collapses to icon + name + the
+          two action buttons. */}
+      <div className="flex items-center gap-2.5 transition-opacity duration-100 ease-out group-hover/row:opacity-0">
+        {isEntityUnmanaged(entity) && (
+          <span className="inline-flex items-center gap-1 text-zinc-400 dark:text-zinc-500 text-[10px] font-medium leading-none flex-shrink-0">
+            <EyeOff className="w-2.5 h-2.5" />
+            Unmanaged
+          </span>
+        )}
+        <span className="w-16 flex-shrink-0 flex justify-end">
+          <StatusBadge status={entity.status} />
         </span>
-      )}
-      <span className="w-16 flex-shrink-0 flex justify-end">
-        <StatusBadge status={entity.status} />
-      </span>
-      <div className="relative flex-shrink-0 w-32 flex items-center justify-end">
-        <div className="group-hover/row:opacity-0 transition-opacity duration-100 ease-out">
+        <div className="flex-shrink-0 w-32 flex items-center justify-end">
           <ChildCounts entity={entity} />
         </div>
-        <div className="absolute inset-0 flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity duration-100 ease-out">
-          {!isLeaf && (
-            <button
-              onClick={handleDrillAction}
-              className="px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
-            >
-              Manage
-            </button>
-          )}
+      </div>
+      {/* Hover action buttons — pinned to the row's right edge with their
+          own white background so they cleanly cover the status pill /
+          child counts beneath without being constrained by the
+          surrounding cell widths. */}
+      <div className="absolute right-3 inset-y-0 flex items-center gap-1 pl-3 opacity-0 pointer-events-none group-hover/row:opacity-100 group-hover/row:pointer-events-auto transition-opacity duration-100 ease-out bg-white dark:bg-zinc-900">
+        {!isLeaf && !isEntityUnmanaged(entity) && (
           <button
             onClick={handleDrillAction}
-            className="px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
+            className="px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors whitespace-nowrap"
           >
-            Scope
+            Manage
           </button>
-        </div>
+        )}
+        <button
+          onClick={handleDrillAction}
+          className="px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors whitespace-nowrap"
+        >
+          View Details
+        </button>
       </div>
     </div>
   );
 }
+
+// Skip re-renders when only callback identity changes — the parent passes
+// fresh function refs each render, but the EntityRow's behavior only cares
+// that the entity / selection / position props are stable.
+const EntityRow = memo(EntityRowImpl, (prev, next) => (
+  prev.entity === next.entity &&
+  prev.isSelected === next.isSelected &&
+  prev.isEven === next.isEven &&
+  prev.ancestorPath === next.ancestorPath &&
+  prev.fullPath === next.fullPath &&
+  prev.selectOnRowClick === next.selectOnRowClick
+));
 
 // ── Scope-aware provisioning button ───────────────────────────────────────────
 

@@ -509,16 +509,16 @@ function validateHierarchy(roots) {
 // exercise grouping, filtering, and capability variants without the
 // render cost of a full production-scale tree. Bump these up if you
 // need to test list/search performance at scale.
-const TOP_DISTRIBUTORS = 10;                  // top-level distributors at root
-// Per-distributor variance — wide ranges so the entity list exercises
-// both tiny and large distributors at scale. Each top-level distributor
-// draws values deterministically from these ranges so the tree shape
-// varies but stays stable across reloads.
-const PARTNERS_PER_DISTRIBUTOR_RANGE = [1, 12];
-const DIRECT_CUSTOMERS_PER_DISTRIBUTOR_RANGE = [0, 10];
-const SUB_DISTRIBUTORS_PER_DISTRIBUTOR_RANGE = [0, 3];
-const CUSTOMERS_PER_PARTNER_RANGE = [3, 30];  // wider — small books to large
-const SMALL_BOOK_RANGE = [2, 10];             // sub-distributors / sub-partners
+const TOP_DISTRIBUTORS = 6;                   // top-level distributors at root
+// Per-distributor variance — ranges tuned so each top-level distributor
+// reads as a different size (small ~25 entities to large ~80) without
+// blowing the total count past a few hundred. Values are pulled
+// deterministically from these ranges via hashedRand.
+const PARTNERS_PER_DISTRIBUTOR_RANGE = [1, 6];
+const DIRECT_CUSTOMERS_PER_DISTRIBUTOR_RANGE = [0, 4];
+const SUB_DISTRIBUTORS_PER_DISTRIBUTOR_RANGE = [0, 2];
+const CUSTOMERS_PER_PARTNER_RANGE = [3, 14];
+const SMALL_BOOK_RANGE = [2, 6];              // sub-distributors / sub-partners
 
 function pickCustomerCount(seed) {
   const r = seededRand(seed);
@@ -643,12 +643,12 @@ function generateData() {
 
   // Direct top-level partners — partners that contract directly with
   // Vipre and don't sit under any distributor. Mix of capabilities and
-  // book sizes (some small, some full-range) so root partners scale
-  // realistically when listed in the entity list.
+  // book sizes so root partners scale realistically when listed.
   const directPartnerSpecs = [
-    ['msp', 0, true],     ['msp', 1, false],
-    ['hybrid', 0, true],  ['hybrid', 1, false],
-    ['reseller', 0, true], ['reseller', 1, false],
+    ['msp', 0, true],
+    ['hybrid', 0, false],
+    ['reseller', 0, true],
+    ['hybrid', 1, true],
   ];
   for (const [cap, idx, smallBook] of directPartnerSpecs) {
     roots.push(buildPartnerForCapability(cap, `root-direct-${cap}-${idx}`, { smallBook }));
@@ -656,7 +656,7 @@ function generateData() {
 
   // Direct top-level customers — enterprise accounts that work with
   // Vipre directly without a distributor or partner in the middle.
-  const DIRECT_ROOT_CUSTOMERS = 20;
+  const DIRECT_ROOT_CUSTOMERS = 10;
   for (let i = 0; i < DIRECT_ROOT_CUSTOMERS; i++) {
     const mode = (i % 4) < 3 ? 'managed' : 'unmanaged'; // ~75% managed
     roots.push(makeEntity({ type: 'customer', managementMode: mode, name: nextCustomerName() }));

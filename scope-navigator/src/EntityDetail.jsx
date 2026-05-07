@@ -1334,7 +1334,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
                             </div>
                             <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate flex-1">{d.name}</span>
                             {unmanaged && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700 text-white text-[10px] font-medium leading-none flex-shrink-0">
+                              <span className="inline-flex items-center gap-1 text-zinc-400 dark:text-zinc-500 text-[10px] font-medium leading-none flex-shrink-0">
                                 <EyeOff className="w-2.5 h-2.5" />
                                 Unmanaged
                               </span>
