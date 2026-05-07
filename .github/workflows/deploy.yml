@@ -27,31 +27,31 @@ jobs:
       - name: Build vipre-prototypes (landing)
         working-directory: vipre-prototypes
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           npm run build
 
       - name: Build scope-navigator
         working-directory: scope-navigator
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           npm run build
 
       - name: Build action-rules
         working-directory: action-rules
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           npm run build
 
       - name: Build marketing-overview
         working-directory: marketing-overview
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           npm run build
 
       - name: Build banner-modal
         working-directory: banner-modal
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           npm run build
 
       - name: Assemble site
