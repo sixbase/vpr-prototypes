@@ -391,7 +391,7 @@ export default function DevicesPage() {
 
   // All devices within current scope
   const allDevices = useMemo(
-    () => collectDevicesInScope(currentEntity),
+    () => collectDevicesInScope(currentEntity).devices,
     [currentEntity]
   );
 
