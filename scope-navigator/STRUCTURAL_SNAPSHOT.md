@@ -1,6 +1,6 @@
 # Scope Navigator — Structural Snapshot
 
-> Snapshot of `/Users/alvinthong/new wonder/scope-navigator` (the only one of the five sibling prototypes that uses partner/reseller/distributor concepts; chosen as the target of the partner taxonomy revision). Captured 2026-05-04.
+> Snapshot of the `scope-navigator` prototype (the only one of the five sibling prototypes that uses partner/reseller/distributor concepts; chosen as the target of the partner taxonomy revision). Captured 2026-05-04.
 >
 > Stack: React 19 + Vite 8 + Tailwind 4 (`@tailwindcss/vite`) + recharts + lucide-react. **No TypeScript** — all source is `.jsx`/`.js`. Entry point is `src/main.jsx` → `src/App.jsx`.
 

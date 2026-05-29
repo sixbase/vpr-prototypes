@@ -136,10 +136,10 @@ const EMAILS_VS_THREATS = [
 ]
 
 const TOP_TARGETED_USERS = [
-  { email: 'solidn00b7@yahoo.com', count: 56 },
-  { email: 'solidn00b7@gmail.com', count: 12 },
-  { email: 'jack@garnseynet.co.uk', count: 1 },
-  { email: 'shellyyang@vsgqa.onmicrosoft.com', count: 1 },
+  { email: 'user1@example.com', count: 56 },
+  { email: 'user2@example.com', count: 12 },
+  { email: 'user3@example.com', count: 1 },
+  { email: 'user4@example.com', count: 1 },
 ]
 
 const TOP_TARGETED_GROUPS = [
@@ -307,11 +307,11 @@ function SATPreview() {
           <div className="text-[9px] font-medium uppercase tracking-wider text-slate-500">Top pending</div>
           <ul className="mt-1 space-y-1 text-[11px]">
             <li className="flex items-center justify-between">
-              <span className="truncate text-slate-700">solidn00b7@yahoo.com</span>
+              <span className="truncate text-slate-700">user1@example.com</span>
               <span className="font-mono text-[10px] text-slate-500">3</span>
             </li>
             <li className="flex items-center justify-between">
-              <span className="truncate text-slate-700">jack@garnseynet.co.uk</span>
+              <span className="truncate text-slate-700">user3@example.com</span>
               <span className="font-mono text-[10px] text-slate-500">2</span>
             </li>
           </ul>
@@ -485,7 +485,7 @@ function SATPreviewRich() {
             Top 5 pending users
           </div>
           <ul className="divide-y divide-slate-100 text-[11px]">
-            {['solidn00b7@yahoo.com', 'jack@garnseynet.co.uk', 'shellyyang@vsgqa.onmicrosoft.com', 'anna.k@clientdomain.com', 'mark.t@clientdomain.com'].map((u, i) => (
+            {['user1@example.com', 'user3@example.com', 'user4@example.com', 'anna.k@example.com', 'mark.t@example.com'].map((u, i) => (
               <li key={u} className="flex items-center justify-between px-3 py-1.5">
                 <span className="truncate text-slate-700">{u}</span>
                 <span className="font-mono text-[10px] text-slate-500">{5 - i} pending</span>
