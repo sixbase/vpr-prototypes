@@ -354,9 +354,10 @@ function SummaryBand({ agg }) {
             <span>Status distribution</span>
             <span className="tabular-nums">{fmt(statusTotal)} accounts</span>
           </div>
-          <div className="flex w-full rounded-full overflow-hidden" style={{ height: 8 }}>
+          {/* gap-1 separates each segment; each segment is its own rounded pill */}
+          <div className="flex w-full items-center gap-1" style={{ height: 8 }}>
             {segs.map((s) => s.n > 0 && (
-              <span key={s.key} className={s.color} style={{ width: `${(s.n / statusTotal) * 100}%` }} title={`${statusConfig[s.key].label}: ${s.n}`} />
+              <span key={s.key} className={`${s.color} rounded-full`} style={{ height: '100%', width: `${(s.n / statusTotal) * 100}%` }} title={`${statusConfig[s.key].label}: ${s.n}`} />
             ))}
           </div>
           <div className="flex items-center gap-4 flex-wrap text-zinc-500 dark:text-zinc-400" style={{ fontSize: 11, marginTop: 6 }}>
@@ -423,7 +424,6 @@ function PackageAdoption({ agg }) {
       </div>
 
       <div className="flex items-center gap-3 px-4 py-2 text-zinc-400 dark:text-zinc-500 border-b border-zinc-100 dark:border-zinc-800" style={{ fontSize: 11 }}>
-        <span style={{ width: 18 }} />
         <span className="flex-1">Package</span>
         <span className="text-right tabular-nums" style={{ width: 80 }}>Customers</span>
         <span style={{ width: 150 }}>Seats in use</span>
@@ -441,7 +441,6 @@ function PackageAdoption({ agg }) {
                 isOpen ? 'bg-blue-50/70 dark:bg-blue-950/30' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
               }`}
             >
-              <ChevronRight className="text-zinc-400 flex-shrink-0" style={{ width: 14, height: 14 }} />
               <span className="flex-1 inline-flex items-center gap-2 min-w-0">
                 <r.Icon className={`${r.color} flex-shrink-0`} style={{ width: 14, height: 14 }} />
                 <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate" style={{ fontSize: 13 }}>{r.label}</span>
@@ -462,6 +461,31 @@ function PackageAdoption({ agg }) {
     {selected && <PackageDrawer pkg={selected} onClose={() => setSelected(null)} />}
     </>
   );
+}
+
+// Shared elegant slide-in/out for every right-hand drawer. Mounts off-screen,
+// flips `show` true on the next frame so the CSS transition runs; on close,
+// flips false and defers the actual unmount (onClose) until the exit animation
+// finishes — so opening AND closing both animate. Esc closes too. Returns the
+// knobs each drawer applies to its backdrop + aside.
+function useDrawerTransition(onClose) {
+  const ANIM_MS = 280;
+  const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)'; // quick to start, gentle to settle
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShow(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const close = useCallback(() => {
+    setShow(false);
+    setTimeout(onClose, ANIM_MS);
+  }, [onClose]);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [close]);
+  return { show, close, ANIM_MS, EASE };
 }
 
 // Right slide-out drawer for a single package — mirrors DetailPeek's shell
@@ -733,6 +757,8 @@ function Directory({ scope, children, seed, onOpenScope, onPeek, peekedId }) {
     const tierRank = { distributor: 0, partner: 1, customer: 2 };
     const sorters = {
       attention: (a, b) => ((meta.get(b.id)?.attention > 0) - (meta.get(a.id)?.attention > 0)) || ((meta.get(a.id)?.util ?? 0) - (meta.get(b.id)?.util ?? 0)),
+      // Entity type: Distributor → Reseller → Customer, then A–Z within each.
+      type: (a, b) => (tierRank[a.type] - tierRank[b.type]) || a.name.localeCompare(b.name),
       name: (a, b) => a.name.localeCompare(b.name),
       util: (a, b) => (meta.get(a.id)?.util ?? 0) - (meta.get(b.id)?.util ?? 0),
       recent: (a, b) => recencyValue(b) - recencyValue(a),
@@ -805,6 +831,7 @@ function Directory({ scope, children, seed, onOpenScope, onPeek, peekedId }) {
             onChange={setSort}
             options={[
               { v: 'attention', l: 'Needs attention first' },
+              { v: 'type', l: 'Type · Dist → Resel → Cust' },
               { v: 'name', l: 'Name A–Z' },
               { v: 'util', l: 'Lowest utilization' },
               { v: 'recent', l: 'Recently active' },
@@ -1000,6 +1027,8 @@ const DirectoryRow = memo(function DirectoryRow({ entity, meta, density, top, he
 
 // ── Detail peek panel (focused — full products, NOT a whole dashboard) ───
 function DetailPeek({ entity, seed, onClose, onOpenScope }) {
+  // Same elegant slide-in/out as PackageDrawer — see useDrawerTransition.
+  const { show, close, ANIM_MS, EASE } = useDrawerTransition(onClose);
   if (!entity) return null;
   const isCustomer = entity.type === 'customer';
   const unmanaged = isUnmanaged(entity);
@@ -1014,8 +1043,20 @@ function DetailPeek({ entity, seed, onClose, onOpenScope }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40" onClick={onClose} />
-      <aside className="fixed top-0 right-0 bottom-0 z-50 bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col" style={{ width: 400 }}>
+      <div
+        className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40"
+        onClick={close}
+        style={{ opacity: show ? 1 : 0, transition: `opacity ${ANIM_MS}ms ease-out` }}
+      />
+      <aside
+        className="fixed top-0 right-0 bottom-0 z-50 bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col"
+        style={{
+          width: 400,
+          transform: show ? 'translateX(0)' : 'translateX(100%)',
+          transition: `transform ${ANIM_MS}ms ${EASE}`,
+          willChange: 'transform',
+        }}
+      >
         <div className="flex items-start gap-3 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
           <span className={`inline-flex items-center justify-center rounded-lg ${cfg.bg} flex-shrink-0`} style={{ width: 36, height: 36 }}>
             <Icon className="text-white" style={{ width: 18, height: 18 }} />
@@ -1028,7 +1069,7 @@ function DetailPeek({ entity, seed, onClose, onOpenScope }) {
               <ManagedTag entity={entity} />
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer flex-shrink-0" aria-label="Close">
+          <button onClick={close} className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer flex-shrink-0" aria-label="Close">
             <X className="text-zinc-500 dark:text-zinc-400" style={{ width: 16, height: 16 }} />
           </button>
         </div>
@@ -1125,7 +1166,7 @@ function DetailPeek({ entity, seed, onClose, onOpenScope }) {
           >
             {isCustomer ? <>Open<ExternalLink style={{ width: 14, height: 14 }} /></> : <>Open &amp; browse<ChevronRight style={{ width: 14, height: 14 }} /></>}
           </button>
-          <button onClick={onClose} className="rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer" style={{ fontSize: 13, padding: '8px 14px' }}>Close</button>
+          <button onClick={close} className="rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer" style={{ fontSize: 13, padding: '8px 14px' }}>Close</button>
         </div>
       </aside>
     </>
