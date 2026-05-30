@@ -33,7 +33,7 @@ export default function CustomerManagementPageB({ openModal, showFuture }) {
 
   if (showAllPane) {
     return (
-      <main className="flex-1 min-h-0 flex flex-col overflow-hidden mx-3 sm:mx-6 mb-5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+      <main className="flex-1 min-h-0 flex flex-col overflow-hidden mx-3 sm:mx-6 mb-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
         <div className="flex items-center gap-2 px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
           <button
             onClick={() => { setShowAllPane(false); setSelectedEntity(null); }}
@@ -89,9 +89,10 @@ export default function CustomerManagementPageB({ openModal, showFuture }) {
     );
   }
 
-  return (
-    <main className="flex-1 min-h-0 flex flex-col overflow-hidden mx-3 sm:mx-6 mb-5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
-      {currentEntity ? (
+  // Entity detail is a single contained panel — keep it inside a framed card.
+  if (currentEntity) {
+    return (
+      <main className="flex-1 min-h-0 flex flex-col overflow-hidden mx-3 sm:mx-6 mb-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
         <EntityDetail
           entity={currentEntity}
           siblings={childEntities}
@@ -100,15 +101,20 @@ export default function CustomerManagementPageB({ openModal, showFuture }) {
           onAddProduct={(entity) => openModal('addProduct', entity)}
           onViewAll={() => setShowAllPane(true)}
         />
-      ) : (
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <DashboardPageB
-            onDrillDown={(child) => navigate([...path, child])}
-            onViewAll={() => setShowAllPane(true)}
-            showFuture={showFuture}
-          />
-        </div>
-      )}
+      </main>
+    );
+  }
+
+  // Dashboard view — no outer tray. The cards are the surfaces and float
+  // directly on the app background (matching Customer Management C), avoiding
+  // the framed-box-in-a-box look.
+  return (
+    <main className="flex-1 min-h-0 overflow-y-auto">
+      <DashboardPageB
+        onDrillDown={(child) => navigate([...path, child])}
+        onViewAll={() => setShowAllPane(true)}
+        showFuture={showFuture}
+      />
     </main>
   );
 }

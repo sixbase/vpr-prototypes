@@ -76,7 +76,7 @@ function Drawer({ open, onClose, wide = false, children }) {
     >
       <div className="absolute inset-0 bg-black/30 dark:bg-black/50" onClick={onClose} />
       <div
-        className={`absolute top-0 right-0 h-full w-full ${wide ? 'max-w-3xl' : 'max-w-md'} bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl transition-all duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`absolute top-0 right-0 h-full w-full ${wide ? 'max-w-3xl' : 'max-w-md'} bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl transition-all duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
         role="dialog"
         aria-modal="true"
       >
@@ -185,7 +185,7 @@ function PackageDetail({ pkg, scope, onClose }) {
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
         <div className="grid grid-cols-3 gap-3">
           {kpis.map(k => (
-            <div key={k.label} className="rounded-lg border border-zinc-100 dark:border-zinc-700/60 px-3 py-3">
+            <div key={k.label} className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 px-3 py-3">
               <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-0.5">{k.label}</div>
               <div className={`text-lg font-semibold tabular-nums ${k.color || 'text-zinc-900 dark:text-zinc-100'}`}>
                 {typeof k.value === 'number' ? k.value.toLocaleString() : k.value}
@@ -368,7 +368,7 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
   return (
     <div className="p-4 sm:p-6 flex flex-col gap-5 lg:h-full lg:min-h-0">
       {/* Scope context card */}
-      <div className="flex-shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 p-5">
+      <div className="flex-shrink-0 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
         <div className="flex items-center gap-3">
           {(() => {
             const config = currentEntity?.type ? typeConfig[currentEntity.type] : null;
@@ -421,7 +421,7 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
 
         {/* Entity metadata */}
         {currentEntity && (currentEntity.address || currentEntity.contact) && (
-          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700 grid grid-cols-2 gap-4">
+          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 grid grid-cols-2 gap-4">
             {currentEntity.address && (
               <div>
                 <div className="flex items-center gap-1.5 mb-1.5">
@@ -456,13 +456,13 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
       {/* Two-column body fills the remaining height */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:flex-1 lg:min-h-0">
         {/* Package Adoption — wide, table grows to fill */}
-        <div className="order-2 lg:col-span-7 flex flex-col lg:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 p-5">
+        <div className="order-2 lg:col-span-7 flex flex-col lg:min-h-0 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
           <div className="flex-shrink-0 text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500 font-medium mb-4">Package Adoption</div>
 
           {/* KPI strip */}
           <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
             {pkgKpis.map(item => (
-              <div key={item.label} className="rounded-lg border border-zinc-100 dark:border-zinc-700/60 px-4 py-3">
+              <div key={item.label} className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 px-4 py-3">
                 <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">{item.label}</div>
                 <div className={`text-xl font-semibold tabular-nums ${item.color || 'text-zinc-900 dark:text-zinc-100'}`}>
                   {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
@@ -519,7 +519,7 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
         {/* Left rail — Descendants over Device Overview, together filling the column */}
         <div className="order-1 lg:col-span-5 flex flex-col gap-5 lg:min-h-0">
           {/* Descendants */}
-          <div className="flex-shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-700 p-5">
+          <div className="flex-shrink-0 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Descendants</span>
               {onViewAll && (
@@ -540,7 +540,7 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
                   <button
                     key={type}
                     onClick={() => openChildrenPanel(type)}
-                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 p-3 flex items-center gap-3 cursor-pointer transition-colors hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 p-3 flex items-center gap-3 cursor-pointer transition-colors hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                   >
                     <div className={`p-2 rounded-lg ${config.bg}`}>
                       <Icon className={`w-5 h-5 ${config.color}`} />
@@ -556,7 +556,7 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
           </div>
 
           {/* Device Overview */}
-          <div className="flex flex-col lg:flex-1 lg:min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 p-5">
+          <div className="flex flex-col lg:flex-1 lg:min-h-0 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
             <div className="flex-shrink-0 text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500 font-medium mb-3">Device Overview</div>
             <div className="flex-shrink-0 grid grid-cols-2 gap-3">
               {[
@@ -565,7 +565,7 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
                 { label: 'Non-Compliant', value: stats.nonCompliant, color: 'text-red-600 dark:text-red-400' },
                 { label: 'Outdated Agent', value: stats.outdatedAgent, color: 'text-amber-600 dark:text-amber-400' },
               ].map(item => (
-                <div key={item.label} className="rounded-lg border border-zinc-100 dark:border-zinc-700/60 px-4 py-3">
+                <div key={item.label} className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 px-4 py-3">
                   <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">{item.label}</div>
                   <div className={`text-xl font-semibold tabular-nums ${item.color}`}>{item.value.toLocaleString()}</div>
                 </div>

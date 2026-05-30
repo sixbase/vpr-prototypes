@@ -7,7 +7,7 @@ import { flattenFrom } from './data';
 function DropdownMenu({ children, onClose }) {
   const ref = useClickOutside(onClose);
   return (
-    <div ref={ref} className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-zinc-800 rounded-md shadow-lg border border-zinc-200 dark:border-zinc-700 z-50 overflow-hidden">
+    <div ref={ref} className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-zinc-800 rounded-lg shadow-lg border border-zinc-200 dark:border-zinc-700 z-50 overflow-hidden">
       {children}
     </div>
   );
@@ -166,7 +166,7 @@ function EntityRowImpl({ entity, onDrillDown, onSelect, isSelected, isEven, ance
         {!isLeaf && !isEntityUnmanaged(entity) && (
           <button
             onClick={handleDrillAction}
-            className="px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors whitespace-nowrap"
+            className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 text-[11px] font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors whitespace-nowrap"
           >
             Manage
           </button>
@@ -354,7 +354,7 @@ export default function EntityList({ entities, onDrillDown, onSelect, selectedEn
   return (
     <div className="flex flex-col h-full bg-black/[0.03] dark:bg-white/[0.03]">
       {/* Toolbar — pinned at top */}
-      <div className="flex-shrink-0 border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+      <div className="flex-shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         {/* Row 1: label + add button */}
         <div className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-1.5">
           <h2 className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider flex-shrink-0">
@@ -376,7 +376,7 @@ export default function EntityList({ entities, onDrillDown, onSelect, selectedEn
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md outline-none focus:ring-2 focus:ring-zinc-300 dark:focus:ring-zinc-500 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
             />
             {search && (
               <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 cursor-pointer">

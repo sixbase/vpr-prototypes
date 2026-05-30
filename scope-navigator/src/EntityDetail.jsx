@@ -553,7 +553,7 @@ export function EntityPackageDetail({ entity, pkg, onBack }) {
         {/* KPIs */}
         <div className="grid grid-cols-3 gap-3">
           {kpis.map(k => (
-            <div key={k.label} className="rounded-lg border border-zinc-100 dark:border-zinc-700/60 px-3 py-3">
+            <div key={k.label} className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 px-3 py-3">
               <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-0.5">{k.label}</div>
               <div className={`text-lg font-semibold tabular-nums ${k.color || 'text-zinc-900 dark:text-zinc-100'}`}>
                 {typeof k.value === 'number' ? k.value.toLocaleString() : k.value}
@@ -806,7 +806,7 @@ export function ChildrenListView({ entity, filter, onBack, onDrillDown, deep = f
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-8 pr-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-md outline-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:ring-2 focus:ring-zinc-400 focus:ring-offset-1 dark:focus:ring-offset-zinc-900"
+            className="w-full pl-8 pr-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -1051,7 +1051,7 @@ function ExpandableChildrenSection({ entity, onDrillDown }) {
   return (
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
       <div
-        className={`flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-zinc-100 dark:hover:bg-zinc-800/50 border-b transition-[background-color,border-color] duration-200 ease-out ${expanded ? 'border-zinc-200 dark:border-zinc-700' : 'border-transparent'}`}
+        className={`flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-zinc-100 dark:hover:bg-zinc-800/50 border-b transition-[background-color,border-color] duration-200 ease-out ${expanded ? 'border-zinc-200 dark:border-zinc-800' : 'border-transparent'}`}
         onClick={() => setExpanded(!expanded)}
         role="button" tabIndex={0} aria-expanded={expanded}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(!expanded); } }}
@@ -1170,7 +1170,7 @@ function AddProductModal({ open, onClose, existingProducts }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ paddingTop: '2vh' }}>
       <div className="absolute inset-0 bg-zinc-950/50 transition-opacity duration-150" onClick={onClose} />
-      <div className="relative w-[520px] max-h-[85vh] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl flex flex-col animate-palette-in">
+      <div className="relative w-[520px] max-h-[85vh] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col animate-palette-in">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 flex-shrink-0">
           <div>
             <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-zinc-100">Add Package</h3>
@@ -1386,7 +1386,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
       {/* ══════════════════════════════════════════════════════════════
           ENTITY HEADER (sticky)
           ══════════════════════════════════════════════════════════════ */}
-      <div className={`px-6 py-4 flex-shrink-0 border-b transition-colors ${scrolled ? 'border-zinc-200 dark:border-zinc-700' : 'border-zinc-100 dark:border-zinc-800'}`}>
+      <div className={`px-6 py-4 flex-shrink-0 border-b transition-colors ${scrolled ? 'border-zinc-200 dark:border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'}`}>
         <div className="flex items-start gap-3">
           <div className={`relative w-10 h-10 rounded-lg ${bg} ring-1 ${ring} flex items-center justify-center flex-shrink-0`}>
             <Icon className={`w-5 h-5 ${color}`} />
@@ -1620,7 +1620,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
               ══════════════════════════════════════════════════════════ */}
           {isUnmanaged && (
             <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5">
-              <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 px-4 py-3 flex items-start gap-3">
+              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 px-4 py-3 flex items-start gap-3">
                 <div className="w-8 h-8 rounded-md bg-zinc-700 flex items-center justify-center flex-shrink-0">
                   <EyeOff className="w-4 h-4 text-white" />
                 </div>
