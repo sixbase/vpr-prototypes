@@ -5,9 +5,9 @@ import {
   MapPin, Phone, User, Network, ArrowLeft, ArrowUpRight,
 } from 'lucide-react';
 import { useScope } from './ScopeContext';
-import { collectDevicesInScope, computeDeviceStats, collectPackageAdoption, mockData, genCustomerPackages, genPartnerPackages } from './data';
+import { collectDevicesInScope, computeDeviceStats, collectPackageAdoption, mockData, genCustomerPackages, genPartnerPackages, findEntityById } from './data';
 import { typeConfig, statusConfig, pkgIconMap, defaultPkgIcon, isPartner, isLeaf, isEntityUnmanaged } from './config';
-import EntityDetail, { ChildrenListView, EntityPackageDetail } from './EntityDetail';
+import EntityDetail, { ChildrenListView, EntityPackageDetail, EntityIdentityHeader } from './EntityDetail';
 
 // Roll up descendants into the three structural buckets shown on the dashboard:
 // distributor / partner / customer. Partner capability (msp / hybrid / reseller)
@@ -86,20 +86,25 @@ function Drawer({ open, onClose, wide = false, children }) {
   );
 }
 
-// Wraps the full EntityDetail panel with a slim drawer toolbar (back + open).
-function DrawerEntityDetail({ entity, siblings, showFuture, onBack, onOpenFull, onDrillDown, onPackageClick }) {
-  // Back-button label reflects where you came from (the list you drilled in from).
+// Wraps EntityDetail with a slim toolbar + a PERSISTENT entity identity header.
+// Drilling into a datapoint (a package) swaps only the body below the header, so
+// the entity you started from stays pinned and obviously unchanged.
+function DrawerEntityDetail({ entity, pkg, siblings, showFuture, onBackToList, onOpenFull, onDrillDown, onPackageClick, onPkgBack }) {
+  // Back-button label reflects where you came from: a datapoint returns to the
+  // entity overview; the overview returns to the list you drilled in from.
   const sourceLabel = entity.type === 'partner' ? 'Reseller' : (typeConfig[entity.type]?.label ?? 'Back');
+  const backLabel = pkg ? 'Overview' : `${sourceLabel}s`;
   return (
     <div className="flex flex-col h-full">
+      {/* Contextual navigation toolbar */}
       <div className="flex items-center gap-2 px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
         <button
-          onClick={onBack}
+          onClick={pkg ? onPkgBack : onBackToList}
           className="flex items-center gap-1 pl-1 pr-2 py-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0 group"
-          aria-label={`Back to ${sourceLabel}s`}
+          aria-label={`Back to ${backLabel}`}
         >
           <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors flex-shrink-0" />
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{sourceLabel}s</span>
+          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{backLabel}</span>
         </button>
         <div className="flex-1" />
         <button
@@ -110,8 +115,17 @@ function DrawerEntityDetail({ entity, siblings, showFuture, onBack, onOpenFull, 
           <ArrowUpRight className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {/* Persistent entity identity — stays pinned across datapoint drill-downs */}
+      <EntityIdentityHeader entity={entity} statusAsDot hideTypeBadge />
+
+      {/* Body swaps between the entity overview and a drilled-in datapoint */}
       <div className="flex-1 min-h-0 flex flex-col">
-        <EntityDetail entity={entity} siblings={siblings} showFuture={showFuture} onDrillDown={onDrillDown} onPackageClick={onPackageClick} hideTypeBadge statusAsDot hideContactInfo />
+        {pkg ? (
+          <EntityPackageDetail entity={entity} pkg={pkg} embedded />
+        ) : (
+          <EntityDetail entity={entity} siblings={siblings} showFuture={showFuture} onDrillDown={onDrillDown} onPackageClick={onPackageClick} hideHeader hideTypeBadge statusAsDot hideContactInfo />
+        )}
       </div>
     </div>
   );
@@ -314,7 +328,12 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
 
   function handleChildDrillDown(child) {
     closeChildrenPanel();
-    if (onDrillDown) {
+    // Navigate using the entity's true ancestry so the breadcrumb shows the
+    // full trail from this node back to the root — not just a one-level hop.
+    const fullPath = findEntityById(child.id)?.path;
+    if (fullPath?.length) {
+      navigate(fullPath);
+    } else if (onDrillDown) {
       onDrillDown(child);
     } else {
       navigate([...path, child]);
@@ -622,27 +641,19 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
               />
             )}
           </div>
-          {/* Entity detail view */}
-          <div className={`absolute inset-0 transition-opacity duration-150 ${detailEntity && !detailPkg ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          {/* Entity detail view — persistent entity header, body drills in place */}
+          <div className={`absolute inset-0 transition-opacity duration-150 ${detailEntity ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             {detailEntity && (
               <DrawerEntityDetail
                 entity={detailEntity}
+                pkg={detailPkg}
                 siblings={childEntities}
                 showFuture={showFuture}
-                onBack={() => setDetailEntity(null)}
+                onBackToList={() => setDetailEntity(null)}
                 onOpenFull={() => handleChildDrillDown(detailEntity)}
                 onDrillDown={(child) => setDetailEntity(child)}
                 onPackageClick={(pkg) => setDetailPkg(pkg)}
-              />
-            )}
-          </div>
-          {/* Package-within-entity detail view */}
-          <div className={`absolute inset-0 transition-opacity duration-150 ${detailEntity && detailPkg ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            {detailEntity && detailPkg && (
-              <EntityPackageDetail
-                entity={detailEntity}
-                pkg={detailPkg}
-                onBack={() => setDetailPkg(null)}
+                onPkgBack={() => setDetailPkg(null)}
               />
             )}
           </div>

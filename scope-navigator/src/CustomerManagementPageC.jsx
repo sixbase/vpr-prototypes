@@ -409,11 +409,13 @@ function PackageAdoption({ agg }) {
 
   return (
     <>
-    <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+    {/* Chromeless: rendered inside the page's single tabbed container. The
+        tab strip already labels this "Package adoption", so the section shows
+        just its summary line + controls (no duplicate heading). */}
+    <div>
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex-wrap">
         <div>
-          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100" style={{ fontSize: 14 }}>Package adoption</h3>
-          <p className="text-zinc-500 dark:text-zinc-400" style={{ fontSize: 11, marginTop: 1 }}>
+          <p className="text-zinc-500 dark:text-zinc-400" style={{ fontSize: 12 }}>
             {rows.length} {rows.length === 1 ? 'package' : 'packages'} · {fmt(totalSeats)} seats · {overall}% overall
           </p>
         </div>
@@ -1241,6 +1243,24 @@ function SectionCard({ children }) {
   );
 }
 
+// Underline tab for the consolidated container's section switcher.
+function TabButton({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative cursor-pointer transition-colors ${
+        active
+          ? 'text-zinc-900 dark:text-zinc-100 font-medium'
+          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+      }`}
+      style={{ fontSize: 13, padding: '10px 12px' }}
+    >
+      {children}
+      {active && <span className="absolute left-3 right-3 bg-blue-600 rounded-full" style={{ height: 2, bottom: -1 }} />}
+    </button>
+  );
+}
+
 // ── Page ────────────────────────────────────────────────────────────────
 export default function CustomerManagementPageC() {
   // Scope comes from the global ScopeContext (same as B) and is driven by the
@@ -1251,6 +1271,7 @@ export default function CustomerManagementPageC() {
   const children = childEntities ?? mockData;
 
   const [peek, setPeek] = useState(null);
+  const [tab, setTab] = useState('all'); // 'all' | 'package' | 'directory' — persists across scope changes
 
   useEffect(() => { setPeek(null); }, [scope?.id]);
 
@@ -1277,21 +1298,32 @@ export default function CustomerManagementPageC() {
         {isLeafCustomer ? (
           <LeafCustomerView customer={scope} />
         ) : (
-          <>
-            <SectionCard>
+          // One container: identity header pinned on top, then tabs switch
+          // between the overview (All), package adoption, and the directory.
+          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
               <IdentityHeader scope={scope} />
-            </SectionCard>
-            <SummaryBand agg={agg} />
-            <PackageAdoption agg={agg} />
-            <Directory
-              scope={scope}
-              children={children}
-              seed={seed}
-              onOpenScope={openScope}
-              onPeek={setPeek}
-              peekedId={peek?.id}
-            />
-          </>
+            </div>
+
+            <div className="flex items-center gap-1 px-3 border-b border-zinc-200 dark:border-zinc-800">
+              <TabButton active={tab === 'all'} onClick={() => setTab('all')}>All</TabButton>
+              <TabButton active={tab === 'package'} onClick={() => setTab('package')}>Package adoption</TabButton>
+              <TabButton active={tab === 'directory'} onClick={() => setTab('directory')}>Directory</TabButton>
+            </div>
+
+            {tab === 'all' && <SummaryBand agg={agg} />}
+            {tab === 'package' && <PackageAdoption agg={agg} />}
+            {tab === 'directory' && (
+              <Directory
+                scope={scope}
+                children={children}
+                seed={seed}
+                onOpenScope={openScope}
+                onPeek={setPeek}
+                peekedId={peek?.id}
+              />
+            )}
+          </div>
         )}
       </div>
 

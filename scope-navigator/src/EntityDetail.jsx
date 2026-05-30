@@ -500,7 +500,7 @@ function PackageAdoptionTable({ entityId, entityType, onPackageClick }) {
 }
 
 // ── Single package's adoption detail, scoped to one entity (drawer view) ──
-export function EntityPackageDetail({ entity, pkg, onBack }) {
+export function EntityPackageDetail({ entity, pkg, onBack, embedded = false }) {
   const isCustomer = entity.type === 'customer';
   const [showAll, setShowAll] = useState(false);
   const pkgIconMap = Object.fromEntries(
@@ -525,17 +525,19 @@ export function EntityPackageDetail({ entity, pkg, onBack }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Toolbar — back to the entity */}
-      <div className="flex items-center gap-1 px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 pl-1 pr-2 py-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors group"
-          aria-label={`Back to ${entity.name}`}
-        >
-          <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors flex-shrink-0" />
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate max-w-[220px]">{entity.name}</span>
-        </button>
-      </div>
+      {/* Toolbar — back to the entity (hidden when embedded under a persistent header) */}
+      {!embedded && (
+        <div className="flex items-center gap-1 px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1 pl-1 pr-2 py-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors group"
+            aria-label={`Back to ${entity.name}`}
+          >
+            <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors flex-shrink-0" />
+            <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate max-w-[220px]">{entity.name}</span>
+          </button>
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
@@ -1294,7 +1296,71 @@ function SummaryStatCard({ label, value, format, sparkSeed, period, variant }) {
 // ══════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════
-export default function EntityDetail({ entity, siblings, onDrillDown, onAddProduct, showFuture = false, externalFilter, onExternalFilterChange, onViewAll, hideTypeBadge = false, statusAsDot = false, hideContactInfo = false, onPackageClick }) {
+// Entity identity header — icon, name, status, UUID/region/last-active. Extracted
+// so a drawer can keep it pinned while the body below it drills into datapoints.
+export function EntityIdentityHeader({ entity, scrolled = false, statusAsDot = false, hideTypeBadge = false }) {
+  const { Icon, color, bg, ring, label } = typeConfig[entity.type];
+  const isUnmanaged = isEntityUnmanaged(entity);
+  return (
+    <div className={`px-6 py-4 flex-shrink-0 border-b transition-colors ${scrolled ? 'border-zinc-200 dark:border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'}`}>
+      <div className="flex items-start gap-3">
+        <div className={`relative w-10 h-10 rounded-lg ${bg} ring-1 ${ring} flex items-center justify-center flex-shrink-0`}>
+          <Icon className={`w-5 h-5 ${color}`} />
+          {isUnmanaged && (
+            <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-zinc-700 ring-2 ring-white dark:ring-zinc-900 flex items-center justify-center" title="Unmanaged">
+              <EyeOff className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+            </span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">{entity.name}</h2>
+            {!hideTypeBadge && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[10px] font-medium leading-none dark:bg-zinc-800 dark:text-zinc-400 flex-shrink-0">{label}</span>
+            )}
+            {isUnmanaged && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700 text-white text-[10px] font-medium leading-none flex-shrink-0">
+                <Paperclip className="w-2.5 h-2.5" />
+                Unmanaged
+              </span>
+            )}
+            {statusAsDot ? (
+              <span className="relative flex items-center flex-shrink-0 group/status">
+                <span className={`w-2.5 h-2.5 rounded-full ${statusConfig[entity.status].dot}`} />
+                <span className="pointer-events-none absolute left-0 top-full mt-1.5 z-20 hidden group-hover/status:block whitespace-nowrap rounded-md bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] leading-none px-2 py-1.5 shadow-lg">
+                  <span className="font-medium">{statusConfig[entity.status].label}</span>
+                  <span className="text-zinc-300"> — {statusConfig[entity.status].desc}</span>
+                </span>
+              </span>
+            ) : (
+              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none flex-shrink-0 ${statusConfig[entity.status].pill}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[entity.status].dot}`} />
+                {statusConfig[entity.status].label}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <CopyableUUID id={entity.id} />
+            {entity.region && (
+              <>
+                <span className="text-zinc-200 dark:text-zinc-700 text-[10px]">&middot;</span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">{entity.region}</span>
+              </>
+            )}
+            {entity.lastActive && (
+              <>
+                <span className="text-zinc-200 dark:text-zinc-700 text-[10px]">&middot;</span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">Active {formatLastActive(entity.lastActive)}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function EntityDetail({ entity, siblings, onDrillDown, onAddProduct, showFuture = false, externalFilter, onExternalFilterChange, onViewAll, hideTypeBadge = false, statusAsDot = false, hideContactInfo = false, hideHeader = false, onPackageClick }) {
   const { Icon, color, bg, ring, label } = typeConfig[entity.type];
   const hasChildren = entity.children?.length > 0;
   const isLeaf = entity.type === 'customer' || !hasChildren;
@@ -1383,65 +1449,10 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
 
       {/* ── Entity details panel (fades out) ── */}
       <div className={`absolute inset-0 flex flex-col transition-opacity duration-150 ease-out ${showChildrenPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-      {/* ══════════════════════════════════════════════════════════════
-          ENTITY HEADER (sticky)
-          ══════════════════════════════════════════════════════════════ */}
-      <div className={`px-6 py-4 flex-shrink-0 border-b transition-colors ${scrolled ? 'border-zinc-200 dark:border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'}`}>
-        <div className="flex items-start gap-3">
-          <div className={`relative w-10 h-10 rounded-lg ${bg} ring-1 ${ring} flex items-center justify-center flex-shrink-0`}>
-            <Icon className={`w-5 h-5 ${color}`} />
-            {isUnmanaged && (
-              <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-zinc-700 ring-2 ring-white dark:ring-zinc-900 flex items-center justify-center" title="Unmanaged">
-                <EyeOff className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
-              </span>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">{entity.name}</h2>
-              {!hideTypeBadge && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[10px] font-medium leading-none dark:bg-zinc-800 dark:text-zinc-400 flex-shrink-0">{label}</span>
-              )}
-              {isUnmanaged && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700 text-white text-[10px] font-medium leading-none flex-shrink-0">
-                  <Paperclip className="w-2.5 h-2.5" />
-                  Unmanaged
-                </span>
-              )}
-              {statusAsDot ? (
-                <span className="relative flex items-center flex-shrink-0 group/status">
-                  <span className={`w-2.5 h-2.5 rounded-full ${statusConfig[entity.status].dot}`} />
-                  <span className="pointer-events-none absolute left-0 top-full mt-1.5 z-20 hidden group-hover/status:block whitespace-nowrap rounded-md bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] leading-none px-2 py-1.5 shadow-lg">
-                    <span className="font-medium">{statusConfig[entity.status].label}</span>
-                    <span className="text-zinc-300"> — {statusConfig[entity.status].desc}</span>
-                  </span>
-                </span>
-              ) : (
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none flex-shrink-0 ${statusConfig[entity.status].pill}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[entity.status].dot}`} />
-                  {statusConfig[entity.status].label}
-                </span>
-              )}
-            </div>
-            {/* Metadata line */}
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              <CopyableUUID id={entity.id} />
-              {entity.region && (
-                <>
-                  <span className="text-zinc-200 dark:text-zinc-700 text-[10px]">&middot;</span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">{entity.region}</span>
-                </>
-              )}
-              {entity.lastActive && (
-                <>
-                  <span className="text-zinc-200 dark:text-zinc-700 text-[10px]">&middot;</span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">Active {formatLastActive(entity.lastActive)}</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* ── Entity header (sticky) ── */}
+      {!hideHeader && (
+        <EntityIdentityHeader entity={entity} scrolled={scrolled} statusAsDot={statusAsDot} hideTypeBadge={hideTypeBadge} />
+      )}
 
       {/* ══════════════════════════════════════════════════════════════
           SCROLLABLE CONTENT
