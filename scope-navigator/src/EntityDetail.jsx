@@ -367,7 +367,7 @@ function PackageAdoptionTable({ entityId, entityType, onPackageClick }) {
       <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         <div className="grid grid-cols-[1fr_60px_96px_48px] gap-2 px-4 py-2 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 text-[10px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
           <span>Package</span>
-          <span>Status</span>
+          <span className="text-center">Status</span>
           <span className="text-right">Seats</span>
           <span className="text-right">Util.</span>
         </div>
@@ -381,7 +381,6 @@ function PackageAdoptionTable({ entityId, entityType, onPackageClick }) {
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  {onPackageClick && <ChevronRight className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />}
                   {PkgIcon && <PkgIcon className={`w-3.5 h-3.5 flex-shrink-0 ${pkgIconColor}`} />}
                   <span className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200 leading-tight">{pkg.name}</span>
                 </div>
@@ -391,16 +390,11 @@ function PackageAdoptionTable({ entityId, entityType, onPackageClick }) {
                   </div>
                 )}
               </div>
-              <div className="pt-0.5">
-                {pkg.status === 'active' ? (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium leading-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />Active
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[10px] font-medium leading-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />Trial
-                  </span>
-                )}
+              <div className="pt-1.5 flex justify-center">
+                <span
+                  className={`inline-block w-2 h-2 rounded-full ${statusConfig[pkg.status]?.dot || 'bg-zinc-400'}`}
+                  title={statusConfig[pkg.status]?.label || pkg.status}
+                />
               </div>
               <div className="text-right pt-0.5 tabular-nums">
                 <span className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200">{pkg.declared.toLocaleString()}</span>
@@ -443,7 +437,7 @@ function PackageAdoptionTable({ entityId, entityType, onPackageClick }) {
               }}
             >
               <div className="flex items-center gap-1.5 min-w-0">
-                <ChevronRight className={`w-3.5 h-3.5 text-zinc-400 dark:text-zinc-400 transition-transform duration-150 flex-shrink-0 ${isExpanded && !onPackageClick ? 'rotate-90' : ''}`} />
+                {!onPackageClick && <ChevronRight className={`w-3.5 h-3.5 text-zinc-400 dark:text-zinc-400 transition-transform duration-150 flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />}
                 {PkgIcon && <PkgIcon className={`w-3.5 h-3.5 flex-shrink-0 ${pkgIconColor}`} />}
                 <span className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200 truncate">{pkg.name}</span>
               </div>
@@ -458,7 +452,8 @@ function PackageAdoptionTable({ entityId, entityType, onPackageClick }) {
                   <span className="text-right">Decl. / Actual</span>
                 </div>
                 {visible.map((row, ri) => {
-                  const { Icon: RowIcon, color: rowColor } = typeConfig[row.type];
+                  // tintColor (not `color`, which is 'text-white') so the bare icon is visible.
+                  const { Icon: RowIcon, tintColor: rowColor } = typeConfig[row.type];
                   return (
                   <div key={ri} className="grid grid-cols-[1fr_100px] gap-2 px-8 py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-b-0">
                     <div className="min-w-0">
@@ -499,17 +494,105 @@ function PackageAdoptionTable({ entityId, entityType, onPackageClick }) {
   );
 }
 
+// Sortable, lazy-loaded table of customers on a package. Default: most seats first.
+const PKG_CUST_PAGE = 25;
+function CustomerSeatTable({ rows }) {
+  const [sortKey, setSortKey] = useState('seats');
+  const [sortDir, setSortDir] = useState('desc');
+  const [visibleCount, setVisibleCount] = useState(PKG_CUST_PAGE);
+
+  const sorted = [...rows].sort((a, b) => {
+    if (sortKey === 'name') {
+      const r = a.name.localeCompare(b.name);
+      return sortDir === 'asc' ? r : -r;
+    }
+    const d = (a[sortKey] ?? 0) - (b[sortKey] ?? 0);
+    return sortDir === 'asc' ? d : -d;
+  });
+  const visible = sorted.slice(0, visibleCount);
+  const hasMore = visibleCount < sorted.length;
+
+  // Lazy-load: grow the window when the sentinel scrolls into view (only matters
+  // for long lists — short ones render fully on first paint).
+  const sentinelRef = useRef(null);
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) setVisibleCount(c => Math.min(c + PKG_CUST_PAGE, sorted.length)); },
+      { rootMargin: '160px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, sorted.length]);
+
+  function toggleSort(key) {
+    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir(key === 'name' ? 'asc' : 'desc'); }
+  }
+
+  const Header = ({ label, k, right }) => (
+    <button
+      onClick={() => toggleSort(k)}
+      className={`flex items-center gap-0.5 text-[10px] font-medium uppercase tracking-wider transition-colors ${right ? 'justify-end' : ''} ${sortKey === k ? 'text-zinc-600 dark:text-zinc-300' : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
+    >
+      {label}
+      <ChevronDown className={`w-3 h-3 transition-transform ${sortKey === k ? 'opacity-100' : 'opacity-0'} ${sortDir === 'asc' ? 'rotate-180' : ''}`} />
+    </button>
+  );
+
+  return (
+    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+      <div className="grid grid-cols-[1fr_64px_56px] gap-2 px-3 py-2 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800">
+        <Header label="Customer" k="name" />
+        <div className="flex justify-end"><Header label="Seats" k="seats" right /></div>
+        <div className="flex justify-end"><Header label="Util" k="util" right /></div>
+      </div>
+      <div>
+        {visible.map((row, ri) => {
+          const rowCfg = typeConfig[row.type === 'reseller' ? 'partner' : row.type] || typeConfig.customer;
+          const RowIcon = rowCfg.Icon;
+          return (
+            <div key={ri} className="grid grid-cols-[1fr_64px_56px] gap-2 items-center px-3 py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-b-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${rowCfg.bg || 'bg-zinc-100 dark:bg-zinc-800'}`}>
+                  <RowIcon className={`w-3 h-3 ${rowCfg.color || 'text-zinc-400'}`} />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200 truncate">{row.name}</div>
+                  {row.addOns.length > 0 && (
+                    <div className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate">{row.addOns.length} add-on{row.addOns.length !== 1 ? 's' : ''}</div>
+                  )}
+                </div>
+              </div>
+              <div className="text-right text-[13px] tabular-nums text-zinc-700 dark:text-zinc-300">{row.seats.toLocaleString()}</div>
+              <div className={`text-right text-[13px] tabular-nums font-medium ${utilColor(row.util)}`}>{row.util}%</div>
+            </div>
+          );
+        })}
+        {hasMore && (
+          <div ref={sentinelRef} className="px-3 py-2 flex items-center justify-center gap-2 text-[11px] text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-800">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Loading… ({visible.length} of {sorted.length})
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Single package's adoption detail, scoped to one entity (drawer view) ──
-export function EntityPackageDetail({ entity, pkg, onBack }) {
+export function EntityPackageDetail({ entity, pkg, onBack, embedded = false }) {
   const isCustomer = entity.type === 'customer';
-  const [showAll, setShowAll] = useState(false);
   const pkgIconMap = Object.fromEntries(
     availableProducts.filter(p => p.category !== 'Add-on').map(p => [p.key, { icon: p.icon, iconColor: p.iconColor }])
   );
   const { icon: PkgIcon, iconColor: pkgIconColor } = pkgIconMap[pkg.id] || {};
 
-  const customerRows = isCustomer ? [] : genCustomerRows(entity.id, pkg.id, pkg.customers, entity.type);
-  const visible = !showAll && customerRows.length > 8 ? customerRows.slice(0, 8) : customerRows;
+  // Per-customer rows enriched with seats (consumed) + utilization for the table.
+  const customerRows = isCustomer ? [] : genCustomerRows(entity.id, pkg.id, pkg.customers, entity.type)
+    .map(r => ({ ...r, seats: r.actual, util: r.declared > 0 ? Math.round((r.actual / r.declared) * 100) : 0 }));
 
   const kpis = isCustomer
     ? [
@@ -525,28 +608,32 @@ export function EntityPackageDetail({ entity, pkg, onBack }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Toolbar — back to the entity */}
-      <div className="flex items-center gap-1 px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 pl-1 pr-2 py-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors group"
-          aria-label={`Back to ${entity.name}`}
-        >
-          <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors flex-shrink-0" />
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate max-w-[220px]">{entity.name}</span>
-        </button>
-      </div>
+      {/* Toolbar — back to the entity (hidden when embedded under a persistent header) */}
+      {!embedded && (
+        <div className="flex items-center gap-1 px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1 pl-1 pr-2 py-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors group"
+            aria-label={`Back to ${entity.name}`}
+          >
+            <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors flex-shrink-0" />
+            <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300 truncate max-w-[220px]">{entity.name}</span>
+          </button>
+        </div>
+      )}
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
-        {/* Package header */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
-            {PkgIcon ? <PkgIcon className={`w-4 h-4 ${pkgIconColor}`} /> : <Package className="w-4 h-4 text-zinc-400" />}
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        {/* Package header — linked to the entity above by a vertical connector */}
+        <div className="relative flex items-center gap-3">
+          {/* Connector rising to meet the entity icon's stub above */}
+          <span aria-hidden className="absolute -top-5 h-7 w-px bg-zinc-200 dark:bg-zinc-700" style={{ left: '19.5px' }} />
+          <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+            {PkgIcon ? <PkgIcon className={`w-5 h-5 ${pkgIconColor}`} /> : <Package className="w-5 h-5 text-zinc-400" />}
           </div>
           <div className="min-w-0">
-            <div className="text-base font-semibold text-zinc-900 dark:text-zinc-100 truncate">{pkg.name}</div>
-            <div className="text-xs text-zinc-400 dark:text-zinc-500 truncate">Package adoption · {entity.name}</div>
+            <div className="text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-0.5">Package</div>
+            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 leading-tight truncate">{pkg.name}</div>
           </div>
         </div>
 
@@ -572,44 +659,13 @@ export function EntityPackageDetail({ entity, pkg, onBack }) {
           </div>
         )}
 
-        {/* Partner: per-customer breakdown */}
+        {/* Partner: per-customer breakdown table */}
         {!isCustomer && (
           <div>
             <div className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
-              Customers on this package ({pkg.customers})
+              Customers ({customerRows.length})
             </div>
-            <div className="rounded-lg border border-zinc-100 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
-              {visible.map((row, ri) => {
-                const { Icon: RowIcon, color: rowColor } = typeConfig[row.type] || {};
-                return (
-                  <div key={ri} className="flex items-start gap-2.5 px-3 py-2">
-                    {RowIcon && <RowIcon className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${rowColor}`} />}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-medium text-zinc-800 dark:text-zinc-200 truncate">{row.name}</div>
-                      {row.addOns.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {row.addOns.map(a => <AddOnTag key={a} name={a} />)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-right tabular-nums flex-shrink-0">
-                      <span className="text-[13px] text-zinc-700 dark:text-zinc-300">{row.declared}</span>
-                      <span className="text-[11px] text-zinc-400 dark:text-zinc-500"> / </span>
-                      <span className={`text-[13px] font-medium ${row.actual > row.declared ? 'text-red-600 dark:text-red-500' : 'text-zinc-700 dark:text-zinc-300'}`}>{row.actual}</span>
-                      <div className="text-[10px] text-zinc-400 dark:text-zinc-500">decl / actual</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {customerRows.length > 8 && !showAll && (
-              <button
-                onClick={() => setShowAll(true)}
-                className="mt-2 text-[11px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-              >
-                View all {pkg.customers} customers
-              </button>
-            )}
+            <CustomerSeatTable rows={customerRows} />
           </div>
         )}
       </div>
@@ -645,7 +701,7 @@ function ComplianceDonut({ score }) {
 // How many list rows to mount per lazy-load page.
 const LIST_PAGE_SIZE = 40;
 
-export function ChildrenListView({ entity, filter, onBack, onDrillDown, deep = false, labelOverrides, hideTypeBadge = false, statusAsDot = false, showManagementFilter = false, subtleUnmanaged = false, typeTitle = false }) {
+export function ChildrenListView({ entity, filter, onBack, onDrillDown, deep = false, labelOverrides, hideTypeBadge = false, statusAsDot = false, showManagementFilter = false, subtleUnmanaged = false, typeTitle = false, hideHeader = false }) {
   const [search, setSearch] = useState('');
   // Managed / Unmanaged audience filter (opt-in via showManagementFilter).
   const [mgmtFilter, setMgmtFilter] = useState('all');
@@ -725,7 +781,7 @@ export function ChildrenListView({ entity, filter, onBack, onDrillDown, deep = f
   // rows render only the loaded (visible) slice.
   const groupTypes = entityTypeOrder.filter(t => visible.some(c => c.type === t));
 
-  const searchPlaceholder = filter ? `Search ${labelFor(filter).toLowerCase()}s` : 'Search children...';
+  const searchPlaceholder = filter ? `Search ${labelFor(filter).toLowerCase()}s` : 'Search entities…';
   const audienceSegments = [
     { key: 'all', label: 'All', count: scopedChildren.length },
     { key: 'managed', label: 'Managed', count: managedCount },
@@ -747,32 +803,34 @@ export function ChildrenListView({ entity, filter, onBack, onDrillDown, deep = f
 
   return (
     <div className="flex flex-col h-full">
-      {/* Compressed parent header */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
-        <button
-          onClick={onBack}
-          className="p-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0 group"
-          aria-label="Back to entity details"
-        >
-          <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
-        </button>
-        {typeTitle ? (
-          <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate flex-1 min-w-0">
-            {filter ? `${labelFor(filter)}s` : label}
-          </span>
-        ) : (
-          <>
-            <span
-              className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate cursor-pointer hover:underline underline-offset-2 flex-1 min-w-0"
-              onClick={onBack}
-            >{entity.name}</span>
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[10px] font-medium leading-none dark:bg-zinc-800 dark:text-zinc-400 flex-shrink-0">{label}</span>
-            {filter && (
-              <span className="text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">· {labelFor(filter)}s only</span>
-            )}
-          </>
-        )}
-      </div>
+      {/* Compressed parent header (omitted when an outer chrome already provides nav) */}
+      {!hideHeader && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
+          <button
+            onClick={onBack}
+            className="p-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0 group"
+            aria-label="Back to entity details"
+          >
+            <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
+          </button>
+          {typeTitle ? (
+            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate flex-1 min-w-0">
+              {filter ? `${labelFor(filter)}s` : label}
+            </span>
+          ) : (
+            <>
+              <span
+                className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate cursor-pointer hover:underline underline-offset-2 flex-1 min-w-0"
+                onClick={onBack}
+              >{entity.name}</span>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[10px] font-medium leading-none dark:bg-zinc-800 dark:text-zinc-400 flex-shrink-0">{label}</span>
+              {filter && (
+                <span className="text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">· {labelFor(filter)}s only</span>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Audience filter — All / Managed / Unmanaged */}
       {showManagementFilter && (
@@ -841,7 +899,7 @@ export function ChildrenListView({ entity, filter, onBack, onDrillDown, deep = f
                         <ChildIcon className={`w-3.5 h-3.5 ${childColor}`} />
                         {!subtleUnmanaged && isEntityUnmanaged(child) && (
                           <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-zinc-700 ring-2 ring-white dark:ring-zinc-900 flex items-center justify-center" title="Unmanaged">
-                            <EyeOff className="w-2 h-2 text-white" strokeWidth={2.5} />
+                            <CaptionsOff className="w-2 h-2 text-white" strokeWidth={2.5} />
                           </span>
                         )}
                       </div>
@@ -859,22 +917,18 @@ export function ChildrenListView({ entity, filter, onBack, onDrillDown, deep = f
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700 text-white text-[10px] font-medium leading-none flex-shrink-0">
-                            <Paperclip className="w-2.5 h-2.5" />
+                            <CaptionsOff className="w-2.5 h-2.5" />
                             Unmanaged
                           </span>
                         )
                       )}
-                      {statusAsDot ? (
-                        <span className="relative flex items-center flex-shrink-0 group/status">
-                          <span className={`w-2.5 h-2.5 rounded-full ${statusConfig[child.status].dot}`} />
-                          <span className="pointer-events-none absolute right-full mr-2 top-1/2 -translate-y-1/2 z-20 hidden group-hover/status:block whitespace-nowrap rounded-md bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] leading-none px-2 py-1.5 shadow-lg">
-                            <span className="font-medium">{statusConfig[child.status].label}</span>
-                            <span className="text-zinc-300"> — {statusConfig[child.status].desc}</span>
-                          </span>
+                      <span className="relative flex items-center flex-shrink-0 group/status">
+                        <span className={`w-2.5 h-2.5 rounded-full ${statusConfig[child.status].dot}`} />
+                        <span className="pointer-events-none absolute right-full mr-2 top-1/2 -translate-y-1/2 z-20 hidden group-hover/status:block whitespace-nowrap rounded-md bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] leading-none px-2 py-1.5 shadow-lg">
+                          <span className="font-medium">{statusConfig[child.status].label}</span>
+                          <span className="text-zinc-300"> — {statusConfig[child.status].desc}</span>
                         </span>
-                      ) : (
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none flex-shrink-0 ${statusConfig[child.status].pill}`}>{statusConfig[child.status].label}</span>
-                      )}
+                      </span>
                       <ChevronRight className="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-400 dark:group-hover:text-zinc-400 transition-colors flex-shrink-0" />
                     </div>
                   );
@@ -917,7 +971,9 @@ export function ChildrenListView({ entity, filter, onBack, onDrillDown, deep = f
 
 // ── Rollup card ──
 function RollupCard({ type, count, entityId, period, onClick }) {
-  const { Icon: TypeIcon, color: typeColor, label: typeLabel, stroke } = typeConfig[type];
+  // Use tintColor (readable brand tint) for the bare icon — `color` is 'text-white',
+  // meant for icons sitting inside a colored bg, so it'd be invisible here.
+  const { Icon: TypeIcon, tintColor: typeColor, label: typeLabel, stroke } = typeConfig[type];
   const displayCount = useCountUp(count);
   return (
     <div
@@ -1108,7 +1164,7 @@ function ExpandableChildrenSection({ entity, onDrillDown }) {
                   </div>
                   <span className="flex-1 min-w-0 text-[13px] font-medium text-zinc-800 dark:text-zinc-200 truncate">{child.name}</span>
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[10px] font-medium leading-none dark:bg-zinc-800 dark:text-zinc-400">{label}</span>
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${statusConfig[child.status].pill}`}>{statusConfig[child.status].label}</span>
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusConfig[child.status].dot}`} title={statusConfig[child.status].label} />
                   {child.children?.length > 0 && <span className="text-[11px] text-zinc-400 dark:text-zinc-500 tabular-nums">{child.children.length}</span>}
                   <ChevronRight className="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-400 transition-colors flex-shrink-0" />
                 </div>
@@ -1294,7 +1350,68 @@ function SummaryStatCard({ label, value, format, sparkSeed, period, variant }) {
 // ══════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════
-export default function EntityDetail({ entity, siblings, onDrillDown, onAddProduct, showFuture = false, externalFilter, onExternalFilterChange, onViewAll, hideTypeBadge = false, statusAsDot = false, hideContactInfo = false, onPackageClick }) {
+// Entity identity header — icon, name, status, UUID/region/last-active. Extracted
+// so a drawer can keep it pinned while the body below it drills into datapoints.
+export function EntityIdentityHeader({ entity, scrolled = false, statusAsDot = false, hideTypeBadge = false, connectorBelow = false }) {
+  const { Icon, color, bg, ring, label } = typeConfig[entity.type];
+  const isUnmanaged = isEntityUnmanaged(entity);
+  return (
+    <div className={`relative px-6 py-4 flex-shrink-0 ${connectorBelow ? '' : `border-b transition-colors ${scrolled ? 'border-zinc-200 dark:border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'}`}`}>
+      {/* Connector stub dropping from the entity icon toward the package below */}
+      {connectorBelow && (
+        <span aria-hidden className="absolute top-14 bottom-0 w-px bg-zinc-200 dark:bg-zinc-700" style={{ left: '43.5px' }} />
+      )}
+      <div className="flex items-start gap-3">
+        <div className={`relative w-10 h-10 rounded-lg ${bg} ring-1 ${ring} flex items-center justify-center flex-shrink-0`}>
+          <Icon className={`w-5 h-5 ${color}`} />
+          {isUnmanaged && (
+            <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-zinc-700 ring-2 ring-white dark:ring-zinc-900 flex items-center justify-center" title="Unmanaged">
+              <CaptionsOff className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+            </span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">{entity.name}</h2>
+            {!hideTypeBadge && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[10px] font-medium leading-none dark:bg-zinc-800 dark:text-zinc-400 flex-shrink-0">{label}</span>
+            )}
+            {isUnmanaged && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700 text-white text-[10px] font-medium leading-none flex-shrink-0">
+                <CaptionsOff className="w-2.5 h-2.5" />
+                Unmanaged
+              </span>
+            )}
+            <span className="relative flex items-center flex-shrink-0 group/status">
+              <span className={`w-2.5 h-2.5 rounded-full ${statusConfig[entity.status].dot}`} />
+              <span className="pointer-events-none absolute left-0 top-full mt-1.5 z-20 hidden group-hover/status:block whitespace-nowrap rounded-md bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] leading-none px-2 py-1.5 shadow-lg">
+                <span className="font-medium">{statusConfig[entity.status].label}</span>
+                <span className="text-zinc-300"> — {statusConfig[entity.status].desc}</span>
+              </span>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <CopyableUUID id={entity.id} />
+            {entity.region && (
+              <>
+                <span className="text-zinc-200 dark:text-zinc-700 text-[10px]">&middot;</span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">{entity.region}</span>
+              </>
+            )}
+            {entity.lastActive && (
+              <>
+                <span className="text-zinc-200 dark:text-zinc-700 text-[10px]">&middot;</span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">Active {formatLastActive(entity.lastActive)}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function EntityDetail({ entity, siblings, onDrillDown, onAddProduct, showFuture = false, externalFilter, onExternalFilterChange, onViewAll, hideTypeBadge = false, statusAsDot = false, hideContactInfo = false, hideHeader = false, hideAddProduct = false, onPackageClick, onOpenChildren, childListProps = {} }) {
   const { Icon, color, bg, ring, label } = typeConfig[entity.type];
   const hasChildren = entity.children?.length > 0;
   const isLeaf = entity.type === 'customer' || !hasChildren;
@@ -1310,6 +1427,8 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
   const showChildrenPanel = isControlled ? Boolean(externalFilter) : showChildrenPanelInternal;
 
   function openChildrenPanel(type) {
+    // When a host wants to open its own side-drawer instead of the inline panel.
+    if (onOpenChildren) { onOpenChildren(type); return; }
     if (isControlled) {
       onExternalFilterChange(type);
     } else {
@@ -1375,73 +1494,19 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
       <div className={`absolute inset-0 flex flex-col transition-opacity duration-150 ease-out ${showChildrenPanel ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <ChildrenListView
           entity={entity}
-          filter={childrenFilter}
+          filter={childrenFilter === 'all' ? null : childrenFilter}
           onBack={closeChildrenPanel}
-          onDrillDown={(child) => { closeChildrenPanel(); onDrillDown(child); }}
+          onDrillDown={(child) => { onDrillDown(child); closeChildrenPanel(); }}
+          {...childListProps}
         />
       </div>
 
       {/* ── Entity details panel (fades out) ── */}
       <div className={`absolute inset-0 flex flex-col transition-opacity duration-150 ease-out ${showChildrenPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-      {/* ══════════════════════════════════════════════════════════════
-          ENTITY HEADER (sticky)
-          ══════════════════════════════════════════════════════════════ */}
-      <div className={`px-6 py-4 flex-shrink-0 border-b transition-colors ${scrolled ? 'border-zinc-200 dark:border-zinc-800' : 'border-zinc-100 dark:border-zinc-800'}`}>
-        <div className="flex items-start gap-3">
-          <div className={`relative w-10 h-10 rounded-lg ${bg} ring-1 ${ring} flex items-center justify-center flex-shrink-0`}>
-            <Icon className={`w-5 h-5 ${color}`} />
-            {isUnmanaged && (
-              <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-zinc-700 ring-2 ring-white dark:ring-zinc-900 flex items-center justify-center" title="Unmanaged">
-                <EyeOff className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
-              </span>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">{entity.name}</h2>
-              {!hideTypeBadge && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[10px] font-medium leading-none dark:bg-zinc-800 dark:text-zinc-400 flex-shrink-0">{label}</span>
-              )}
-              {isUnmanaged && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700 text-white text-[10px] font-medium leading-none flex-shrink-0">
-                  <Paperclip className="w-2.5 h-2.5" />
-                  Unmanaged
-                </span>
-              )}
-              {statusAsDot ? (
-                <span className="relative flex items-center flex-shrink-0 group/status">
-                  <span className={`w-2.5 h-2.5 rounded-full ${statusConfig[entity.status].dot}`} />
-                  <span className="pointer-events-none absolute left-0 top-full mt-1.5 z-20 hidden group-hover/status:block whitespace-nowrap rounded-md bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] leading-none px-2 py-1.5 shadow-lg">
-                    <span className="font-medium">{statusConfig[entity.status].label}</span>
-                    <span className="text-zinc-300"> — {statusConfig[entity.status].desc}</span>
-                  </span>
-                </span>
-              ) : (
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none flex-shrink-0 ${statusConfig[entity.status].pill}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[entity.status].dot}`} />
-                  {statusConfig[entity.status].label}
-                </span>
-              )}
-            </div>
-            {/* Metadata line */}
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              <CopyableUUID id={entity.id} />
-              {entity.region && (
-                <>
-                  <span className="text-zinc-200 dark:text-zinc-700 text-[10px]">&middot;</span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">{entity.region}</span>
-                </>
-              )}
-              {entity.lastActive && (
-                <>
-                  <span className="text-zinc-200 dark:text-zinc-700 text-[10px]">&middot;</span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">Active {formatLastActive(entity.lastActive)}</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* ── Entity header (sticky) ── */}
+      {!hideHeader && (
+        <EntityIdentityHeader entity={entity} scrolled={scrolled} statusAsDot={statusAsDot} hideTypeBadge={hideTypeBadge} />
+      )}
 
       {/* ══════════════════════════════════════════════════════════════
           SCROLLABLE CONTENT
@@ -1560,7 +1625,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
 
               {childTypeEntries.length > 0 && (
                 <div className="space-y-2">
-                  {onViewAll && (
+                  {onViewAll && childTypeEntries.length > 1 && (
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Descendants</span>
                       <button
@@ -1590,9 +1655,11 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Package Adoption</span>
-                  <button onClick={() => onAddProduct ? onAddProduct(entity) : setShowAddProduct(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer inline-flex items-center gap-1">
-                    <Plus className="w-3 h-3" />Add
-                  </button>
+                  {!hideAddProduct && (
+                    <button onClick={() => onAddProduct ? onAddProduct(entity) : setShowAddProduct(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer inline-flex items-center gap-1">
+                      <Plus className="w-3 h-3" />Add
+                    </button>
+                  )}
                 </div>
                 <PackageAdoptionTable entityId={entity.id} entityType={entity.type} onPackageClick={onPackageClick} />
               </div>
@@ -1603,12 +1670,14 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
               CUSTOMER PRODUCT SUBSCRIPTIONS (customers only)
               ══════════════════════════════════════════════════════════ */}
           {entity.type === 'customer' && (
-            <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5">
+            <div className={hideContactInfo ? '' : 'border-t border-zinc-200 dark:border-zinc-800 pt-5'}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Package Adoption</h3>
-                <button onClick={() => onAddProduct ? onAddProduct(entity) : setShowAddProduct(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer inline-flex items-center gap-1">
-                  <Plus className="w-3 h-3" />Add
-                </button>
+                {!hideAddProduct && (
+                  <button onClick={() => onAddProduct ? onAddProduct(entity) : setShowAddProduct(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer inline-flex items-center gap-1">
+                    <Plus className="w-3 h-3" />Add
+                  </button>
+                )}
               </div>
               <PackageAdoptionTable entityId={entity.id} entityType={entity.type} />
             </div>
@@ -1622,7 +1691,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
             <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5">
               <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 px-4 py-3 flex items-start gap-3">
                 <div className="w-8 h-8 rounded-md bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                  <EyeOff className="w-4 h-4 text-white" />
+                  <CaptionsOff className="w-4 h-4 text-white" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{

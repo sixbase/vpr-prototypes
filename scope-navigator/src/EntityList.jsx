@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { Search, ArrowUpDown, Filter, X, Users, Plus, EyeOff } from 'lucide-react';
+import { Search, ArrowUpDown, Filter, X, Users, Plus, CaptionsOff } from 'lucide-react';
 import { typeConfig, statusConfig, StatusBadge, entityTypeOrder, sortOptions, applySorting, isEntityUnmanaged, managementModeConfig } from './config';
 import useClickOutside from './useClickOutside';
 import { flattenFrom } from './data';
@@ -125,7 +125,7 @@ function EntityRowImpl({ entity, onDrillDown, onSelect, isSelected, isEven, ance
         <Icon className={`w-3 h-3 ${tileFg}`} />
         {isEntityUnmanaged(entity) && (
           <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-zinc-700 ring-2 ring-white dark:ring-zinc-900 flex items-center justify-center" title="Unmanaged">
-            <EyeOff className="w-2 h-2 text-white" strokeWidth={2.5} />
+            <CaptionsOff className="w-2 h-2 text-white" strokeWidth={2.5} />
           </span>
         )}
       </div>
@@ -147,7 +147,7 @@ function EntityRowImpl({ entity, onDrillDown, onSelect, isSelected, isEven, ance
       <div className="flex items-center gap-2.5 transition-opacity duration-100 ease-out group-hover/row:opacity-0">
         {isEntityUnmanaged(entity) && (
           <span className="inline-flex items-center gap-1 text-zinc-400 dark:text-zinc-500 text-[10px] font-medium leading-none flex-shrink-0">
-            <EyeOff className="w-2.5 h-2.5" />
+            <CaptionsOff className="w-2.5 h-2.5" />
             Unmanaged
           </span>
         )}
@@ -431,7 +431,7 @@ export default function EntityList({ entities, onDrillDown, onSelect, selectedEn
                 <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Status</div>
                 {['active', 'trial', 'suspended'].map(s => (
                   <MenuButton key={s} active={statusFilter === s} onClick={() => { setStatusFilter(statusFilter === s ? null : s); setActiveMenu(null); }}>
-                    <StatusBadge status={s} />
+                    <StatusBadge status={s} showLabel />
                   </MenuButton>
                 ))}
                 <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-700 mt-1">Management</div>
