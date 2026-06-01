@@ -81,7 +81,7 @@ function DropdownPopover({ items, onSelect, onClose, header, currentEntityId }) 
             )}
             {['active', 'trial', 'suspended'].map(s => (
               <MenuButton key={s} active={statusFilter === s} onClick={() => { setStatusFilter(s); setActiveMenu(null); }}>
-                <StatusBadge status={s} />
+                <StatusBadge status={s} showLabel />
               </MenuButton>
             ))}
           </ToolbarMenu>
@@ -98,34 +98,29 @@ function DropdownPopover({ items, onSelect, onClose, header, currentEntityId }) 
             <button
               key={item.id}
               onClick={() => { if (!isCurrent) { onSelect(item); onClose(); } }}
-              className={`w-full text-left px-3 py-2.5 flex items-center gap-2 ${
+              className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 ${
                 isCurrent
-                  ? 'bg-zinc-50 dark:bg-zinc-700/50 cursor-default'
+                  ? 'bg-zinc-100 dark:bg-zinc-700/50 cursor-default'
                   : 'hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer'
               }`}
             >
-              <div className="w-5 flex-shrink-0 flex items-center justify-center">
-                {isCurrent
-                  ? <Check className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-                  : ItemIcon && (
-                      <span className={`inline-flex items-center justify-center w-5 h-5 rounded ${typeConfig[item.type]?.bg ?? 'bg-zinc-500'}`}>
-                        <ItemIcon className="w-3 h-3 text-white" />
-                      </span>
-                    )
-                }
+              <div className="w-7 flex-shrink-0 flex items-center justify-center">
+                {ItemIcon && (
+                  <span className={`inline-flex items-center justify-center w-7 h-7 rounded-md ${typeConfig[item.type]?.bg ?? 'bg-zinc-500'}`}>
+                    <ItemIcon className="w-4 h-4 text-white" />
+                  </span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-medium truncate ${isCurrent ? 'text-zinc-500 dark:text-zinc-400' : 'text-zinc-900 dark:text-zinc-100'}`}>{item.name}</span>
-                  <TypeBadge type={item.type} />
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <StatusBadge status={item.status} />
-                  {item.children?.length > 0 && (
-                    <span className="text-xs text-zinc-400 dark:text-zinc-500">{item.children.length} children</span>
-                  )}
-                </div>
+                <span className="block text-sm font-medium truncate text-zinc-900 dark:text-zinc-100">{item.name}</span>
+                {item.children?.length > 0 && (
+                  <span className="block text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{item.children.length} children</span>
+                )}
               </div>
+              {isCurrent && (
+                <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-600 text-zinc-600 dark:text-zinc-200 flex-shrink-0">Current</span>
+              )}
+              <StatusBadge status={item.status} />
             </button>
           );
         })}
@@ -219,7 +214,7 @@ function BreadcrumbSegment({ label, isActive, isRoot, entityType, entity, pathIn
   const hasDropdown = dropdownItems?.length > 0;
 
   return (
-    <div className="relative flex items-center">
+    <div className="relative flex items-center flex-shrink-0">
       <div className={`flex items-center gap-2 rounded-lg text-sm font-medium transition-colors duration-150 min-h-[40px] ${
         isTeleported ? 'animate-teleport-highlight' : ''
       } ${
@@ -229,14 +224,14 @@ function BreadcrumbSegment({ label, isActive, isRoot, entityType, entity, pathIn
       }`}>
         <button
           onClick={isActive && !isRoot ? undefined : onClick}
-          className={`flex items-center gap-2 ${isActive && !isRoot ? '' : 'cursor-pointer'}`}
+          className={`flex items-center gap-2 min-w-0 ${isActive && !isRoot ? '' : 'cursor-pointer'}`}
         >
           {Icon && (
             <span className={`inline-flex items-center justify-center w-5 h-5 rounded flex-shrink-0 ${isRoot ? 'bg-zinc-700 dark:bg-zinc-500' : (typeConfig[entityType]?.bg ?? 'bg-zinc-500')}`}>
               <Icon className="w-3 h-3 text-white" />
             </span>
           )}
-          {label}
+          <span className={`truncate ${isActive ? 'max-w-[140px] sm:max-w-[230px]' : 'max-w-[110px] sm:max-w-[180px]'}`}>{label}</span>
         </button>
         {hasDropdown && (
           <button
@@ -341,38 +336,52 @@ export default function ScopeNavigator({ path, onNavigate, onSearchOpen, telepor
 
   const allSegments = [rootSegment, ...pathSegments];
 
-  // Responsive overflow: show all segments, collapse only when container overflows
+  // Responsive collapse: drop middle segments into a "…" menu as space tightens.
   const navRef = useRef(null);
   const innerRef = useRef(null);
   const [overflowing, setOverflowing] = useState(false);
+  const [navWidth, setNavWidth] = useState(0);
 
   useEffect(() => {
     const nav = navRef.current;
-    const inner = innerRef.current;
-    if (!nav || !inner) return;
-
-    function check() {
-      // Compare the natural scroll width of content vs the container width
-      setOverflowing(inner.scrollWidth > nav.clientWidth);
-    }
-
+    if (!nav) return;
+    const check = () => setNavWidth(nav.clientWidth);
     check();
     const ro = new ResizeObserver(check);
     ro.observe(nav);
     return () => ro.disconnect();
-  }, [allSegments.length]);
+  }, []);
 
-  let visibleSegments;
+  // Estimate each segment's rendered width and only collapse the middle into a
+  // "…" menu when the trail genuinely won't fit — so a wide screen shows the
+  // full path, and only tight widths trim. Deterministic (no measure-driven
+  // flicker), and matches the label width caps below.
+  const n = allSegments.length;
+  const w = navWidth || 9999;
+  const LABEL_CAP = 180;
+  const GAP = 28; // chevron + gaps between segments
+  const ELL = 44; // the "…" chip
+  const reserved = w >= 640 ? 400 : 80; // Future State (+ inline search on sm+)
+  const avail = w - reserved;
+  const segW = (seg) => {
+    const len = seg.isRoot ? 12 : (seg.label || '').length;
+    return 36 + Math.min(LABEL_CAP, len * 7.2) + (seg.dropdownItems?.length ? 28 : 0);
+  };
+  const widthOf = (segs) => segs.reduce((s, x) => s + (x === 'ellipsis' ? ELL : segW(x)), 0) + GAP * Math.max(0, segs.length - 1);
+
+  let visibleSegments = allSegments;
   let ellipsisSegments = null;
-
-  if (overflowing && allSegments.length > 3) {
+  if (n > 2 && widthOf(allSegments) > avail) {
     const first = allSegments[0];
     const lastTwo = allSegments.slice(-2);
-    const hidden = allSegments.slice(1, -2);
-    ellipsisSegments = hidden;
-    visibleSegments = [first, 'ellipsis', ...lastTwo];
-  } else {
-    visibleSegments = allSegments;
+    const candidate = [first, 'ellipsis', ...lastTwo];
+    if (n > 3 && widthOf(candidate) <= avail) {
+      ellipsisSegments = allSegments.slice(1, -2);
+      visibleSegments = candidate;
+    } else {
+      ellipsisSegments = allSegments.slice(1, -1);
+      visibleSegments = [first, 'ellipsis', allSegments[n - 1]];
+    }
   }
 
   return (
@@ -392,7 +401,7 @@ export default function ScopeNavigator({ path, onNavigate, onSearchOpen, telepor
             }
             const { id, ...segProps } = seg;
             return (
-              <div key={id} className="flex items-center gap-2">
+              <div key={id} className="flex items-center gap-2 min-w-0">
                 {i > 0 && seg !== 'ellipsis' && visibleSegments[i - 1] !== 'ellipsis' && (
                   <ChevronRight className="w-4 h-4 text-black/30 dark:text-white/30 flex-shrink-0" />
                 )}
@@ -403,14 +412,15 @@ export default function ScopeNavigator({ path, onNavigate, onSearchOpen, telepor
         </div>
         <button
           onClick={onToggleFuture}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer flex-shrink-0 ${
+          title="Future State"
+          className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer flex-shrink-0 ${
             showFuture
               ? 'bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-700 text-violet-600 dark:text-violet-400'
               : 'border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:border-zinc-300 dark:hover:border-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400'
           }`}
         >
           <Zap className="w-3 h-3" />
-          Future State
+          <span className="hidden sm:inline">Future State</span>
         </button>
         </div>
         <SearchTrigger onClick={onSearchOpen} />

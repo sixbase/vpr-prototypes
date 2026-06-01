@@ -143,10 +143,7 @@ export default function DashboardPage({ externalFilter, onExternalFilterChange, 
             <div className="flex items-center gap-2">
               <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{name}</div>
               {currentEntity?.status && (
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none flex-shrink-0 ${statusConfig[currentEntity.status].pill}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[currentEntity.status].dot}`} />
-                  {statusConfig[currentEntity.status].label}
-                </span>
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusConfig[currentEntity.status].dot}`} title={statusConfig[currentEntity.status].label} />
               )}
             </div>
             <div className="flex items-center gap-3 mt-0.5">

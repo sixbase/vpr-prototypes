@@ -7,8 +7,9 @@ import {
 import { useScope } from './ScopeContext';
 import {
   typeConfig, statusConfig, StatusBadge, isEntityUnmanaged, getDisplayType,
+  pkgIconMap, defaultPkgIcon,
 } from './config';
-import { mockData } from './data';
+import { mockData, collectPackageAdoption } from './data';
 
 /*
   Customer Management C
@@ -315,7 +316,8 @@ function SummaryBand({ agg }) {
   ];
 
   return (
-    <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+    // Chromeless: rendered inside the page's single tabbed container.
+    <div className="p-4">
       {/* These chips roll up the ENTIRE subtree (every level below this scope),
           so they intentionally differ from the directory facet counts, which
           only tally the direct rows on the list. The caption below makes the
@@ -384,86 +386,89 @@ function CountChip({ Icon, label, value }) {
   );
 }
 
-// ── Package adoption ────────────────────────────────────────────────────
-function PackageAdoption({ agg }) {
-  const [category, setCategory] = useState('all');
+// ── Package adoption ────────────────────────
+// Reads the SAME shared source as Customer Management B (collectPackageAdoption),
+// so C lists B's real VIPRE packages and reflects the per-reseller package mix
+// B uses. Each row is a real package { id, name, entities (=customers),
+// seats (=seats in use), avgUtil }. Flat list, no product-type grouping: B's
+// packages are commercial SKUs that cut across Endpoint / Email / SafeSend.
+function PackageAdoption({ adoption }) {
   const [sort, setSort] = useState('adopted');
-  const [selected, setSelected] = useState(null); // package row → opens right drawer
+  const [selected, setSelected] = useState(null); // package row opens the right drawer
 
   const rows = useMemo(() => {
-    let r = agg.families.filter((f) => f.declared > 0);
-    if (category !== 'all') r = r.filter((f) => f.category === category);
+    const r = [...(adoption?.packages || [])];
     const sorters = {
-      adopted: (a, b) => b.customers - a.customers,
-      seats: (a, b) => b.declared - a.declared,
-      util: (a, b) => a.util - b.util,
+      adopted: (a, b) => b.entities - a.entities,
+      seats: (a, b) => b.seats - a.seats,
+      util: (a, b) => a.avgUtil - b.avgUtil,
     };
-    return [...r].sort(sorters[sort]);
-  }, [agg, category, sort]);
+    return r.sort(sorters[sort]);
+  }, [adoption, sort]);
 
-  const totalSeats = rows.reduce((s, r) => s + r.declared, 0);
-  const totalUsed = rows.reduce((s, r) => s + r.actual, 0);
-  const overall = totalSeats > 0 ? Math.round((totalUsed / totalSeats) * 100) : 0;
-
-  if (!agg.families.some((f) => f.declared > 0)) return null;
+  if (!rows.length) {
+    return (
+      <div className="px-4 py-10 text-center text-zinc-500 dark:text-zinc-400" style={{ fontSize: 13 }}>
+        No package adoption in this scope.
+      </div>
+    );
+  }
 
   return (
     <>
-    {/* Chromeless: rendered inside the page's single tabbed container. The
-        tab strip already labels this "Package adoption", so the section shows
-        just its summary line + controls (no duplicate heading). */}
+    {/* Chromeless: rendered inside the page's single tabbed container. The tab
+        strip already labels this, so just the summary line + sort control. */}
     <div>
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex-wrap">
-        <div>
-          <p className="text-zinc-500 dark:text-zinc-400" style={{ fontSize: 12 }}>
-            {rows.length} {rows.length === 1 ? 'package' : 'packages'} · {fmt(totalSeats)} seats · {overall}% overall
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Segmented value={category} onChange={setCategory} options={[{ v: 'all', l: 'All' }, { v: 'email', l: 'Email' }, { v: 'endpoint', l: 'Endpoint' }]} />
-          <LabeledSelect label="Sort" value={sort} onChange={setSort} options={[{ v: 'adopted', l: 'Most adopted' }, { v: 'seats', l: 'Most seats' }, { v: 'util', l: 'Lowest utilization' }]} />
-        </div>
+        <p className="text-zinc-500 dark:text-zinc-400" style={{ fontSize: 12 }}>
+          {rows.length} {rows.length === 1 ? 'package' : 'packages'} {"·"} {fmt(adoption.totalSeats || 0)} seats in use {"·"} {adoption.avgUtil || 0}% avg utilization
+        </p>
+        <LabeledSelect label="Sort" value={sort} onChange={setSort} options={[{ v: 'adopted', l: 'Most adopted' }, { v: 'seats', l: 'Most seats' }, { v: 'util', l: 'Lowest utilization' }]} />
       </div>
 
       <div className="flex items-center gap-3 px-4 py-2 text-zinc-400 dark:text-zinc-500 border-b border-zinc-100 dark:border-zinc-800" style={{ fontSize: 11 }}>
         <span className="flex-1">Package</span>
-        <span className="text-right tabular-nums" style={{ width: 80 }}>Customers</span>
-        <span style={{ width: 150 }}>Seats in use</span>
-        <span className="text-right tabular-nums" style={{ width: 48 }}>Util</span>
+        <span className="text-right tabular-nums" style={{ width: 90 }}>Customers</span>
+        <span className="text-right tabular-nums" style={{ width: 90 }}>Seats</span>
+        <span style={{ width: 120 }}>Utilization</span>
+        <span className="text-right tabular-nums" style={{ width: 44 }}>Util</span>
+        <span style={{ width: 16 }} />
       </div>
 
       <div>
         {rows.map((r) => {
-          const isOpen = selected?.key === r.key;
+          const { icon: PkgIcon, color: pkgColor } = pkgIconMap[r.id] || defaultPkgIcon;
+          const isOpen = selected?.id === r.id;
           return (
             <button
-              key={r.key}
+              key={r.id}
               onClick={() => setSelected(r)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-left border-b border-zinc-100 dark:border-zinc-800 last:border-0 transition-colors cursor-pointer ${
                 isOpen ? 'bg-blue-50/70 dark:bg-blue-950/30' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/40'
               }`}
             >
               <span className="flex-1 inline-flex items-center gap-2 min-w-0">
-                <r.Icon className={`${r.color} flex-shrink-0`} style={{ width: 14, height: 14 }} />
-                <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate" style={{ fontSize: 13 }}>{r.label}</span>
-                <TypeTag>{r.category}</TypeTag>
+                <PkgIcon className={`${pkgColor} flex-shrink-0`} style={{ width: 15, height: 15 }} />
+                <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate" style={{ fontSize: 13 }}>{r.name}</span>
               </span>
-              <span className="text-right tabular-nums text-zinc-700 dark:text-zinc-300" style={{ width: 80, fontSize: 13 }}>{fmt(r.customers)}</span>
-              <span className="inline-flex items-center gap-2" style={{ width: 150 }}>
-                <UtilBar pct={r.util} width={86} />
-                <span className="tabular-nums text-zinc-500 dark:text-zinc-400" style={{ fontSize: 11 }}>{fmt(r.actual)}/{fmt(r.declared)}</span>
+              <span className="text-right tabular-nums text-zinc-700 dark:text-zinc-300" style={{ width: 90, fontSize: 13 }}>{fmt(r.entities)}</span>
+              <span className="text-right tabular-nums text-zinc-500 dark:text-zinc-400" style={{ width: 90, fontSize: 13 }}>{fmt(r.seats)}</span>
+              <span className="inline-flex items-center" style={{ width: 120 }}>
+                <UtilBar pct={r.avgUtil} width={108} />
               </span>
-              <span className={`text-right tabular-nums font-medium ${TONE_TEXT[utilTone(r.util)]}`} style={{ width: 48, fontSize: 13 }}>{r.util}%</span>
+              <span className={`text-right tabular-nums font-medium ${TONE_TEXT[utilTone(r.avgUtil)]}`} style={{ width: 44, fontSize: 13 }}>{r.avgUtil}%</span>
+              <ChevronRight className="text-zinc-300 dark:text-zinc-600 flex-shrink-0" style={{ width: 16, height: 16 }} />
             </button>
           );
         })}
       </div>
     </div>
 
-    {selected && <PackageDrawer pkg={selected} onClose={() => setSelected(null)} />}
+    {selected && <PackageDrawer pkg={selected} adoption={adoption} onClose={() => setSelected(null)} />}
     </>
   );
 }
+
 
 // Shared elegant slide-in/out for every right-hand drawer. Mounts off-screen,
 // flips `show` true on the next frame so the CSS transition runs; on close,
@@ -490,19 +495,19 @@ function useDrawerTransition(onClose) {
   return { show, close, ANIM_MS, EASE };
 }
 
-// Right slide-out drawer for a single package — mirrors DetailPeek's shell
-// (backdrop + fixed right aside) so the two read as one system. Surfaces the
-// data that's actually useful for a package at this scope: adoption totals, a
-// utilization-health split, the managed-vs-billing mix, and the per-customer
-// list (lowest utilization first — the rows you'd act on).
-function PackageDrawer({ pkg, onClose }) {
-  const CAP = 100; // render cap — keep the drawer cheap on a 2,600-customer reseller
-  const rows = pkg.breakdown || [];
+// Right slide-out drawer for a single package, sharing the same animated shell
+// as DetailPeek so the two read as one system. Reads from collectPackageAdoption
+// (B's source): rolled-up totals for the package across this scope, plus the
+// managed vs unmanaged seat split when the scope exposes those buckets
+// (partner / distributor / root).
+function PackageDrawer({ pkg, adoption, onClose }) {
+  const { icon: PkgIcon, color: pkgColor } = pkgIconMap[pkg.id] || defaultPkgIcon;
 
-  // Slide-in / slide-out: mount off-screen, flip `show` true on the next frame
-  // so the CSS transition runs; on close, flip false and unmount only after the
-  // transition finishes, so the exit animates too (instead of popping away).
+  // Slide-in / slide-out: mount off-screen, flip show true on the next frame so
+  // the CSS transition runs; on close, flip false and unmount only after the
+  // transition finishes, so the exit animates too.
   const ANIM_MS = 280;
+  const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
   const [show, setShow] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setShow(true));
@@ -510,67 +515,42 @@ function PackageDrawer({ pkg, onClose }) {
   }, []);
   const close = useCallback(() => {
     setShow(false);
-    const t = setTimeout(onClose, ANIM_MS);
-    return () => clearTimeout(t);
+    setTimeout(onClose, ANIM_MS);
   }, [onClose]);
-  // Esc closes (with the same exit animation).
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') close(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [close]);
-  // Drawer-feel easing: quick to start, gentle to settle.
-  const EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
 
-  // Per-customer list, lowest utilization first (most actionable on top).
-  const sorted = useMemo(
-    () => [...rows].sort((a, b) => (a.declared ? a.actual / a.declared : 0) - (b.declared ? b.actual / b.declared : 0)),
-    [rows]
-  );
-  const shown = sorted.slice(0, CAP);
-
-  // Utilization-health split (green ≥70 / amber 50–69 / red <50) + managed mix.
-  const { bands, managedCount } = useMemo(() => {
-    const b = { healthy: 0, amber: 0, low: 0 };
-    let managed = 0;
-    for (const c of rows) {
-      const u = c.declared > 0 ? (c.actual / c.declared) * 100 : 0;
-      if (u >= 70) b.healthy++; else if (u >= 50) b.amber++; else b.low++;
-      if (c.managed) managed++;
-    }
-    return { bands: b, managedCount: managed };
-  }, [rows]);
-  const billingCount = rows.length - managedCount;
-  const bandTotal = bands.healthy + bands.amber + bands.low || 1;
-  const Icon = pkg.Icon;
+  const managedRow = adoption?.managed?.packages?.find((p) => p.id === pkg.id);
+  const unmanagedRow = adoption?.unmanaged?.packages?.find((p) => p.id === pkg.id);
+  const hasSplit = !!(managedRow || unmanagedRow);
+  const managedSeats = managedRow?.seats || 0;
+  const unmanagedSeats = unmanagedRow?.seats || 0;
+  const splitTotal = managedSeats + unmanagedSeats || 1;
+  const shareOfSeats = adoption?.totalSeats ? Math.round((pkg.seats / adoption.totalSeats) * 100) : null;
 
   return (
     <>
+      {/* Backdrop fades with the panel; click closes. */}
       <div
-        className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40"
         onClick={close}
-        style={{ opacity: show ? 1 : 0, transition: `opacity ${ANIM_MS}ms ease-out` }}
+        className="fixed inset-0 z-40 bg-black/20 dark:bg-black/40 transition-opacity"
+        style={{ opacity: show ? 1 : 0, transitionDuration: ANIM_MS + 'ms', transitionTimingFunction: EASE }}
       />
+      {/* Panel slides in from the right. */}
       <aside
         className="fixed top-0 right-0 bottom-0 z-50 bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col"
-        style={{
-          width: 420,
-          transform: show ? 'translateX(0)' : 'translateX(100%)',
-          transition: `transform ${ANIM_MS}ms ${EASE}`,
-          willChange: 'transform',
-        }}
+        style={{ width: 400, transform: show ? 'translateX(0)' : 'translateX(100%)', transition: 'transform ' + ANIM_MS + 'ms ' + EASE }}
       >
-        {/* Header */}
         <div className="flex items-start gap-3 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
           <span className="inline-flex items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 flex-shrink-0" style={{ width: 36, height: 36 }}>
-            <Icon className={pkg.color} style={{ width: 18, height: 18 }} />
+            <PkgIcon className={pkgColor} style={{ width: 18, height: 18 }} />
           </span>
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate" style={{ fontSize: 15 }}>{pkg.label}</h3>
-            <div className="flex items-center gap-1.5 flex-wrap" style={{ marginTop: 3 }}>
-              <TypeTag>{pkg.category}</TypeTag>
-              <span className="text-zinc-400 dark:text-zinc-500" style={{ fontSize: 11 }}>{fmt(pkg.customers)} {pkg.customers === 1 ? 'customer' : 'customers'}</span>
-            </div>
+            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate" style={{ fontSize: 15 }}>{pkg.name}</h3>
+            <p className="text-zinc-500 dark:text-zinc-400" style={{ fontSize: 12, marginTop: 2 }}>{fmt(pkg.entities)} {pkg.entities === 1 ? 'customer' : 'customers'} in this scope</p>
           </div>
           <button onClick={close} className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer flex-shrink-0" aria-label="Close">
             <X className="text-zinc-500 dark:text-zinc-400" style={{ width: 16, height: 16 }} />
@@ -578,85 +558,39 @@ function PackageDrawer({ pkg, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Top metrics */}
-          <div className="grid grid-cols-3 gap-2.5">
-            <MetricTile label="Customers" value={fmt(pkg.customers)} />
-            <MetricTile label="Seats in use" value={fmt(pkg.actual)} sub={`of ${fmt(pkg.declared)}`} />
-            <MetricTile label="Utilization" value={`${pkg.util}%`} tone={TONE_TEXT[utilTone(pkg.util)]} />
+          {/* Rolled-up totals for this package across the scope */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <MetricTile label="Customers" value={fmt(pkg.entities)} />
+            <MetricTile label="Seats in use" value={fmt(pkg.seats)} />
+            <MetricTile label="Utilization" value={pkg.avgUtil + '%'} tone={TONE_TEXT[utilTone(pkg.avgUtil)]} />
+            <MetricTile label="Share of seats" value={shareOfSeats === null ? '-' : shareOfSeats + '%'} sub="of all packages" />
           </div>
 
-          {/* Utilization health split */}
-          <div>
-            <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400" style={{ fontSize: 11, marginBottom: 4 }}>
-              <span>Utilization health</span>
-              <span className="tabular-nums">{fmt(rows.length)} customers</span>
-            </div>
-            <div className="flex w-full rounded-full overflow-hidden" style={{ height: 8 }}>
-              {bands.healthy > 0 && <span className="bg-green-500" style={{ width: `${(bands.healthy / bandTotal) * 100}%` }} title={`Healthy ≥70%: ${bands.healthy}`} />}
-              {bands.amber > 0 && <span className="bg-amber-500" style={{ width: `${(bands.amber / bandTotal) * 100}%` }} title={`50–69%: ${bands.amber}`} />}
-              {bands.low > 0 && <span className="bg-red-500" style={{ width: `${(bands.low / bandTotal) * 100}%` }} title={`Below 50%: ${bands.low}`} />}
-            </div>
-            <div className="flex items-center gap-4 flex-wrap text-zinc-500 dark:text-zinc-400" style={{ fontSize: 11, marginTop: 6 }}>
-              <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-green-500" style={{ width: 7, height: 7 }} />Healthy <span className="tabular-nums font-medium text-zinc-700 dark:text-zinc-300">{fmt(bands.healthy)}</span></span>
-              <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-amber-500" style={{ width: 7, height: 7 }} />50–69% <span className="tabular-nums font-medium text-zinc-700 dark:text-zinc-300">{fmt(bands.amber)}</span></span>
-              <span className="inline-flex items-center gap-1.5"><span className="rounded-full bg-red-500" style={{ width: 7, height: 7 }} />Under 50% <span className="tabular-nums font-medium text-zinc-700 dark:text-zinc-300">{fmt(bands.low)}</span></span>
-            </div>
-          </div>
-
-          {/* Managed vs billing-only mix */}
-          <div className="flex items-center gap-4 rounded-lg border border-zinc-200 dark:border-zinc-800 px-3 py-2.5">
-            <span className="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-300" style={{ fontSize: 12 }}>
-              <Eye style={{ width: 13, height: 13 }} /> Managed <span className="tabular-nums font-semibold">{fmt(managedCount)}</span>
-            </span>
-            <span className="self-stretch bg-zinc-200 dark:bg-zinc-700" style={{ width: 1 }} />
-            <span className="inline-flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400" style={{ fontSize: 12 }}>
-              <EyeOff style={{ width: 13, height: 13 }} /> Billing only <span className="tabular-nums font-semibold">{fmt(billingCount)}</span>
-            </span>
-          </div>
-
-          {/* Per-customer list (lowest utilization first) */}
-          <div>
-            <h4 className="font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide" style={{ fontSize: 11, marginBottom: 8 }}>
-              Customers · lowest utilization first
-            </h4>
+          {/* Managed vs unmanaged seat split (only when the scope exposes buckets) */}
+          {hasSplit && (
             <div>
-              {shown.map((c) => {
-                const util = c.declared > 0 ? Math.round((c.actual / c.declared) * 100) : 0;
-                return (
-                  <div key={c.id} className="flex items-center gap-3 py-1.5 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
-                    <span className="flex-1 inline-flex items-center gap-1.5 min-w-0">
-                      <span className="text-zinc-700 dark:text-zinc-300 truncate" style={{ fontSize: 12 }}>{c.name}</span>
-                      <span className="inline-flex items-center text-zinc-400 dark:text-zinc-500 flex-shrink-0" title={c.managed ? 'Managed' : 'Unmanaged (billing only)'}>
-                        {c.managed ? <Eye style={{ width: 11, height: 11 }} /> : <EyeOff style={{ width: 11, height: 11 }} />}
-                      </span>
-                    </span>
-                    <UtilBar pct={util} width={70} />
-                    <span className="tabular-nums text-zinc-500 dark:text-zinc-400 text-right" style={{ width: 78, fontSize: 11 }}>{fmt(c.actual)}/{fmt(c.declared)}</span>
-                    <span className={`tabular-nums font-medium text-right ${TONE_TEXT[utilTone(util)]}`} style={{ width: 36, fontSize: 11 }}>{util}%</span>
-                  </div>
-                );
-              })}
+              <h4 className="font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide" style={{ fontSize: 11, marginBottom: 8 }}>Managed vs unmanaged seats</h4>
+              <div className="flex w-full items-center gap-1" style={{ height: 8, marginBottom: 8 }}>
+                {managedSeats > 0 && <span className="bg-blue-500 rounded-full" style={{ height: '100%', width: ((managedSeats / splitTotal) * 100) + '%' }} title={'Managed: ' + managedSeats} />}
+                {unmanagedSeats > 0 && <span className="bg-zinc-400 dark:bg-zinc-600 rounded-full" style={{ height: '100%', width: ((unmanagedSeats / splitTotal) * 100) + '%' }} title={'Unmanaged: ' + unmanagedSeats} />}
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between" style={{ fontSize: 12 }}>
+                  <span className="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-300"><Eye style={{ width: 13, height: 13 }} /> Managed</span>
+                  <span className="tabular-nums text-zinc-700 dark:text-zinc-300">{fmt(managedSeats)} seats {"·"} {managedRow?.avgUtil || 0}%</span>
+                </div>
+                <div className="flex items-center justify-between" style={{ fontSize: 12 }}>
+                  <span className="inline-flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400"><EyeOff style={{ width: 13, height: 13 }} /> Unmanaged (billing only)</span>
+                  <span className="tabular-nums text-zinc-500 dark:text-zinc-400">{fmt(unmanagedSeats)} seats {"·"} {unmanagedRow?.avgUtil || 0}%</span>
+                </div>
+              </div>
             </div>
-            {sorted.length > CAP && (
-              <p className="text-zinc-400 dark:text-zinc-500" style={{ fontSize: 11, paddingTop: 6 }}>
-                Showing the {CAP} lowest-utilization of {fmt(sorted.length)} customers. {/* production paginates / queries the server */}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Footer actions (placeholders — wired to the API in production) */}
-        <div className="px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
-          <button onClick={() => {}} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex-1 cursor-pointer transition-colors" style={{ fontSize: 13, padding: '8px 12px' }}>
-            <Download style={{ width: 14, height: 14 }} /> Export list
-          </button>
-          <button onClick={close} className="rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer" style={{ fontSize: 13, padding: '8px 14px' }}>Close</button>
+          )}
         </div>
       </aside>
     </>
   );
 }
-
 // ── Shared form controls ────────────────────────────────────────────────
 function Segmented({ value, onChange, options }) {
   return (
@@ -811,7 +745,8 @@ function Directory({ scope, children, seed, onOpenScope, onPeek, peekedId }) {
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+    // Chromeless: rendered inside the page's single tabbed container.
+    <div>
       {/* Find + filter toolbar */}
       <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 space-y-2.5">
         <div className="flex items-center gap-2 flex-wrap">
@@ -1283,6 +1218,14 @@ export default function CustomerManagementPageC() {
     [scope, children, isLeafCustomer]
   );
 
+  // Package adoption reads from the SAME shared source as Customer Management B
+  // (collectPackageAdoption), so C lists B's real VIPRE packages — and reflects
+  // the per-reseller package mix B uses — instead of an invented grouping.
+  const adoption = useMemo(
+    () => (isLeafCustomer ? null : collectPackageAdoption(scope)),
+    [scope, isLeafCustomer]
+  );
+
   const openScope = useCallback((entity) => {
     setPeek(null);
     drillDown(entity); // drills into partners/distributors AND customers (→ leaf view)
@@ -1312,7 +1255,7 @@ export default function CustomerManagementPageC() {
             </div>
 
             {tab === 'all' && <SummaryBand agg={agg} />}
-            {tab === 'package' && <PackageAdoption agg={agg} />}
+            {tab === 'package' && <PackageAdoption adoption={adoption} />}
             {tab === 'directory' && (
               <Directory
                 scope={scope}

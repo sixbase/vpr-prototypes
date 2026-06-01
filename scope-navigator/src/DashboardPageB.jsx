@@ -1,13 +1,92 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, Fragment } from 'react';
 import {
   Building2, Monitor, Shield, Activity,
   Package, Mail, Send, ShieldCheck, Bug, Globe, Cloud, Key, ScanSearch, Clock, Paperclip,
-  MapPin, Phone, User, Network, ArrowLeft, ArrowUpRight,
+  MapPin, Phone, User, Network, ArrowLeft, ArrowUpRight, ChevronRight,
 } from 'lucide-react';
 import { useScope } from './ScopeContext';
 import { collectDevicesInScope, computeDeviceStats, collectPackageAdoption, mockData, genCustomerPackages, genPartnerPackages, findEntityById } from './data';
 import { typeConfig, statusConfig, pkgIconMap, defaultPkgIcon, isPartner, isLeaf, isEntityUnmanaged } from './config';
 import EntityDetail, { ChildrenListView, EntityPackageDetail, EntityIdentityHeader } from './EntityDetail';
+import useClickOutside from './useClickOutside';
+
+// Clickable "…" in the drawer breadcrumb — opens a menu of the collapsed levels.
+function BreadcrumbEllipsis({ items }) {
+  const [open, setOpen] = useState(false);
+  const ref = useClickOutside(() => setOpen(false));
+  return (
+    <div ref={ref} className="relative flex-shrink-0">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`px-1.5 py-1 rounded-md text-xs font-medium transition-colors ${open ? 'bg-zinc-200/70 dark:bg-zinc-700/70 text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/70'}`}
+        aria-label="Show hidden levels"
+      >
+        …
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 min-w-[180px] max-w-[280px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-lg py-1">
+          {items.map(it => (
+            <button
+              key={it.key}
+              onClick={() => { setOpen(false); it.onClick(); }}
+              className="w-full text-left px-3 py-1.5 text-xs text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors truncate"
+            >
+              {it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Shared drawer top bar — identical breadcrumb styling for both the list view and
+// the entity-detail view, so it doesn't visibly change as you drill. "Open" only
+// shows once an entity is selected.
+function DrawerTopBar({ crumbs, onBack, showOpen = false, onOpen }) {
+  const shown = crumbs.length > 3
+    ? [crumbs[0], { key: '__ell', ellipsis: true, items: crumbs.slice(1, -1) }, crumbs[crumbs.length - 1]]
+    : crumbs;
+  return (
+    <div className="flex items-center gap-1.5 px-3 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
+      <button
+        onClick={onBack}
+        className="p-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0 group"
+        aria-label="Back"
+      >
+        <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
+      </button>
+      <nav className="flex items-center gap-1 min-w-0 flex-1">
+        {shown.map((c, i) => (
+          <Fragment key={c.key}>
+            {i > 0 && <ChevronRight className="w-3 h-3 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />}
+            {c.ellipsis ? (
+              <BreadcrumbEllipsis items={c.items} />
+            ) : c.onClick ? (
+              <button
+                onClick={c.onClick}
+                className="text-xs font-medium px-1.5 py-1 rounded-md text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/70 dark:hover:bg-zinc-700/70 transition-colors truncate min-w-0"
+              >
+                {c.label}
+              </button>
+            ) : (
+              <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate min-w-0">{c.label}</span>
+            )}
+          </Fragment>
+        ))}
+      </nav>
+      {showOpen && (
+        <button
+          onClick={onOpen}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0"
+        >
+          Open
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 // Roll up descendants into the three structural buckets shown on the dashboard:
 // distributor / partner / customer. Partner capability (msp / hybrid / reseller)
@@ -76,7 +155,7 @@ function Drawer({ open, onClose, wide = false, children }) {
     >
       <div className="absolute inset-0 bg-black/30 dark:bg-black/50" onClick={onClose} />
       <div
-        className={`absolute top-0 right-0 h-full w-full ${wide ? 'max-w-3xl' : 'max-w-md'} bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl transition-all duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`absolute top-0 right-0 h-full w-full ${wide ? 'max-w-2xl' : 'max-w-md'} bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${open ? 'translate-x-0' : 'translate-x-full'}`}
         role="dialog"
         aria-modal="true"
       >
@@ -86,46 +165,38 @@ function Drawer({ open, onClose, wide = false, children }) {
   );
 }
 
-// Wraps EntityDetail with a slim toolbar + a PERSISTENT entity identity header.
-// Drilling into a datapoint (a package) swaps only the body below the header, so
-// the entity you started from stays pinned and obviously unchanged.
-function DrawerEntityDetail({ entity, pkg, siblings, showFuture, onBackToList, onOpenFull, onDrillDown, onPackageClick, onPkgBack }) {
-  // Back-button label reflects where you came from: a datapoint returns to the
-  // entity overview; the overview returns to the list you drilled in from.
-  const sourceLabel = entity.type === 'partner' ? 'Reseller' : (typeConfig[entity.type]?.label ?? 'Back');
-  const backLabel = pkg ? 'Overview' : `${sourceLabel}s`;
+// Detail body shown under the (static) drawer top bar: the entity identity header
+// plus the overview, which slides aside when a package datapoint is opened. The
+// breadcrumb / back / "Open" all live in the persistent top bar above this.
+function DrawerEntityDetail({ entity, filter, onFilterChange, pkg, siblings, showFuture, onDrillDown, onPackageClick }) {
+  // Keep the last package mounted through the slide-out so the panel doesn't
+  // blank out mid-animation when navigating back to the overview.
+  const [shownPkg, setShownPkg] = useState(pkg);
+  useEffect(() => { if (pkg) setShownPkg(pkg); }, [pkg]);
+
+  const drawerChildListProps = {
+    labelOverrides: B_LABEL_OVERRIDES,
+    hideHeader: true,
+    hideTypeBadge: true,
+    statusAsDot: true,
+    subtleUnmanaged: true,
+    showManagementFilter: true,
+  };
   return (
     <div className="flex flex-col h-full">
-      {/* Contextual navigation toolbar */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex-shrink-0">
-        <button
-          onClick={pkg ? onPkgBack : onBackToList}
-          className="flex items-center gap-1 pl-1 pr-2 py-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0 group"
-          aria-label={`Back to ${backLabel}`}
-        >
-          <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors flex-shrink-0" />
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">{backLabel}</span>
-        </button>
-        <div className="flex-1" />
-        <button
-          onClick={onOpenFull}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0"
-        >
-          Open
-          <ArrowUpRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      {/* Entity identity — slides with its content beneath the fixed top bar */}
+      <EntityIdentityHeader entity={entity} statusAsDot hideTypeBadge connectorBelow={!!pkg} />
 
-      {/* Persistent entity identity — stays pinned across datapoint drill-downs */}
-      <EntityIdentityHeader entity={entity} statusAsDot hideTypeBadge />
-
-      {/* Body swaps between the entity overview and a drilled-in datapoint */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        {pkg ? (
-          <EntityPackageDetail entity={entity} pkg={pkg} embedded />
-        ) : (
-          <EntityDetail entity={entity} siblings={siblings} showFuture={showFuture} onDrillDown={onDrillDown} onPackageClick={onPackageClick} hideHeader hideTypeBadge statusAsDot hideContactInfo />
-        )}
+      {/* Body — overview sits underneath; the package detail slides in from the right */}
+      <div className="flex-1 min-h-0 relative overflow-hidden">
+        {/* Overview layer — eases back slightly as the datapoint takes focus */}
+        <div className={`absolute inset-0 flex flex-col transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${pkg ? '-translate-x-8 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
+          <EntityDetail entity={entity} siblings={siblings} showFuture={showFuture} onDrillDown={onDrillDown} onPackageClick={onPackageClick} onViewAll={() => onFilterChange('all')} hideHeader hideTypeBadge statusAsDot hideContactInfo hideAddProduct externalFilter={filter} onExternalFilterChange={onFilterChange} childListProps={drawerChildListProps} />
+        </div>
+        {/* Package datapoint layer — slides over with a soft depth shadow on its edge */}
+        <div className={`absolute inset-0 flex flex-col bg-white dark:bg-zinc-900 shadow-[-16px_0_40px_-16px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${pkg ? 'translate-x-0' : 'translate-x-full pointer-events-none'}`}>
+          {shownPkg && <EntityPackageDetail entity={entity} pkg={shownPkg} embedded />}
+        </div>
       </div>
     </div>
   );
@@ -259,7 +330,7 @@ function PackageDetail({ pkg, scope, onClose }) {
   );
 }
 
-export default function DashboardPageB({ externalFilter, onExternalFilterChange, onDrillDown, onViewAll, showFuture = false } = {}) {
+export default function DashboardPageB({ externalFilter, onExternalFilterChange, onDrillDown, onViewAll, showFuture = false, openModal } = {}) {
   const { currentEntity, currentLevel, childEntities, path, navigate } = useScope();
   const [internalFilter, setInternalFilter] = useState(null);
   // Retains the last opened type so the drawer keeps rendering its list while
@@ -269,9 +340,17 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
   // content rendered through the slide-out transition.
   const [selectedPkg, setSelectedPkg] = useState(null);
   const [retainedPkg, setRetainedPkg] = useState(null);
-  // Entity detail shown inside the descendants drawer (clicking a row). When set,
-  // the drawer swaps the list for the full EntityDetail panel and widens.
-  const [detailEntity, setDetailEntity] = useState(null);
+  // Entity drill stack inside the descendants drawer. Each entry is an entity you
+  // drilled into; the last one is what's shown. Lets you retrace step-by-step and
+  // see the trail (breadcrumb), instead of losing your place when going deep.
+  // Each entry is { entity, filter } — `filter` records which child-list (if any)
+  // was open at that level, so Back retraces to the exact view you came from.
+  const [detailStack, setDetailStack] = useState([]);
+  const detailTop = detailStack.length ? detailStack[detailStack.length - 1] : null;
+  const detailEntity = detailTop?.entity ?? null;
+  const detailFilter = detailTop?.filter ?? null;
+  // Keeps the detail content mounted through the slide-out back to the list.
+  const [retainedEntity, setRetainedEntity] = useState(null);
   // A package drilled into from within an entity's detail view (third level).
   const [detailPkg, setDetailPkg] = useState(null);
 
@@ -279,7 +358,7 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
   const childrenFilter = isControlled ? (externalFilter ?? null) : internalFilter;
 
   function openChildrenPanel(type) {
-    setDetailEntity(null); // always open to the list, not a stale detail view
+    setDetailStack([]); // always open to the list, not a stale detail view
     setDetailPkg(null);
     if (isControlled) onExternalFilterChange(type);
     else setInternalFilter(type);
@@ -301,24 +380,29 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
     if (selectedPkg) setRetainedPkg(selectedPkg);
   }, [selectedPkg]);
 
-  // Close drawers when the scope changes out from under them.
-  useEffect(() => { setSelectedPkg(null); setDetailEntity(null); setDetailPkg(null); }, [currentEntity?.id]);
-  // Returning to the list clears any drilled-in package.
-  useEffect(() => { if (!detailEntity) setDetailPkg(null); }, [detailEntity]);
+  useEffect(() => {
+    if (detailEntity) setRetainedEntity(detailEntity);
+  }, [detailEntity?.id]);
 
-  // Escape: step back one level (package → entity → list), then close.
+  // Close drawers when the scope changes out from under them.
+  useEffect(() => { setSelectedPkg(null); setDetailStack([]); setDetailPkg(null); }, [currentEntity?.id]);
+  // Returning to the list clears any drilled-in package.
+  useEffect(() => { if (!detailStack.length) setDetailPkg(null); }, [detailStack.length]);
+
+  // Escape: step back one level (package → up the entity stack → list), then close.
   useEffect(() => {
     if (!childrenFilter && !selectedPkg) return;
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
       if (detailPkg) { setDetailPkg(null); return; }
-      if (detailEntity) { setDetailEntity(null); return; }
+      if (detailTop?.filter) { setDetailStack(s => [...s.slice(0, -1), { ...s[s.length - 1], filter: null }]); return; }
+      if (detailStack.length) { setDetailStack(s => s.slice(0, -1)); return; }
       closeChildrenPanel();
       setSelectedPkg(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [childrenFilter, selectedPkg, detailEntity, detailPkg]);
+  }, [childrenFilter, selectedPkg, detailStack.length, detailTop?.filter, detailPkg]);
 
   const rootSynthetic = useMemo(
     () => ({ type: 'root', name: 'All Accounts', children: mockData }),
@@ -339,6 +423,31 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
       navigate([...path, child]);
     }
   }
+
+  // ── Single, static drawer top bar ───────────────────────────────────────
+  // Lives above the sliding content so navigation stays anchored as you drill.
+  const drawerListLabel = (!retainedFilter || retainedFilter === 'all')
+    ? 'All accounts'
+    : `${B_LABEL_OVERRIDES[retainedFilter] ?? (typeConfig[retainedFilter]?.label ?? 'Account')}s`;
+  const topCrumbs = detailEntity
+    ? [
+        { key: '__list', label: drawerListLabel, onClick: () => setDetailStack([]) },
+        ...detailStack.slice(0, -1).map((e, i) => ({
+          key: e.entity.id,
+          label: e.entity.name,
+          onClick: () => { setDetailPkg(null); setDetailStack(s => s.slice(0, i + 1).map((x, idx) => idx === i ? { ...x, filter: null } : x)); },
+        })),
+      ]
+    : [{ key: '__list', label: drawerListLabel }];
+  // Back retraces one level: package → overview, child-list → overview, else pop
+  // one entity (restoring the list it came from), finally out to the list.
+  const topBack = detailEntity
+    ? (detailPkg
+        ? () => setDetailPkg(null)
+        : detailFilter
+          ? () => setDetailStack(s => [...s.slice(0, -1), { ...s[s.length - 1], filter: null }])
+          : () => { setDetailPkg(null); setDetailStack(s => s.slice(0, -1)); })
+    : closeChildrenPanel;
 
   const name = currentEntity?.name ?? 'All Accounts';
   const descendantCounts = useMemo(
@@ -385,6 +494,32 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
   ];
 
   return (
+    <>
+    {currentEntity ? (
+      /* Drilled into a specific entity — rich detail, wired to the same drawers */
+      <main className="flex-1 min-h-0 flex flex-col overflow-hidden mx-3 sm:mx-6 mb-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+        <EntityDetail
+          entity={currentEntity}
+          siblings={childEntities}
+          showFuture={showFuture}
+          hideContactInfo
+          statusAsDot
+          hideTypeBadge
+          onDrillDown={(child) => navigate([...path, child])}
+          onOpenChildren={(type) => openChildrenPanel(type)}
+          onPackageClick={(pkg) => setSelectedPkg({
+            id: pkg.id,
+            name: pkg.name,
+            entities: pkg.entities ?? pkg.customers ?? 1,
+            seats: pkg.seats ?? pkg.actual ?? 0,
+            avgUtil: pkg.avgUtil ?? pkg.util ?? 0,
+          })}
+          onViewAll={() => openChildrenPanel('all')}
+          onAddProduct={openModal ? (e) => openModal('addProduct', e) : undefined}
+        />
+      </main>
+    ) : (
+    <main className="flex-1 min-h-0 overflow-y-auto">
     <div className="p-4 sm:p-6 flex flex-col gap-5 lg:h-full lg:min-h-0">
       {/* Scope context card */}
       <div className="flex-shrink-0 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
@@ -404,10 +539,7 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
             <div className="flex items-center gap-2">
               <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{name}</div>
               {currentEntity?.status && (
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none flex-shrink-0 ${statusConfig[currentEntity.status].pill}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[currentEntity.status].dot}`} />
-                  {statusConfig[currentEntity.status].label}
-                </span>
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusConfig[currentEntity.status].dot}`} title={statusConfig[currentEntity.status].label} />
               )}
             </div>
             <div className="flex items-center gap-3 mt-0.5">
@@ -541,14 +673,12 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
           <div className="flex-shrink-0 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Descendants</span>
-              {onViewAll && (
-                <button
-                  onClick={onViewAll}
-                  className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer transition-colors"
-                >
-                  View all →
-                </button>
-              )}
+              <button
+                onClick={() => openChildrenPanel('all')}
+                className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer transition-colors"
+              >
+                View all →
+              </button>
             </div>
             <div className="space-y-2">
               {['distributor', 'partner', 'customer'].map(type => {
@@ -618,44 +748,56 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
           </div>
         </div>
       </div>
+    </div>
+    </main>
+    )}
 
       {/* Descendants drawer — slides in from the right edge of the page.
           Swaps between the entity list and a full entity-detail view. */}
-      <Drawer open={!!childrenFilter} onClose={closeChildrenPanel} wide={!!detailEntity}>
-        <div className="relative h-full">
-          {/* List view */}
-          <div className={`absolute inset-0 transition-opacity duration-150 ${detailEntity ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-            {retainedFilter && (
-              <ChildrenListView
-                entity={listEntity}
-                filter={retainedFilter}
-                onBack={closeChildrenPanel}
-                onDrillDown={(child) => setDetailEntity(child)}
-                deep
-                labelOverrides={B_LABEL_OVERRIDES}
-                hideTypeBadge
-                statusAsDot
-                showManagementFilter
-                subtleUnmanaged
-                typeTitle
-              />
-            )}
-          </div>
-          {/* Entity detail view — persistent entity header, body drills in place */}
-          <div className={`absolute inset-0 transition-opacity duration-150 ${detailEntity ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            {detailEntity && (
-              <DrawerEntityDetail
-                entity={detailEntity}
-                pkg={detailPkg}
-                siblings={childEntities}
-                showFuture={showFuture}
-                onBackToList={() => setDetailEntity(null)}
-                onOpenFull={() => handleChildDrillDown(detailEntity)}
-                onDrillDown={(child) => setDetailEntity(child)}
-                onPackageClick={(pkg) => setDetailPkg(pkg)}
-                onPkgBack={() => setDetailPkg(null)}
-              />
-            )}
+      <Drawer open={!!childrenFilter} onClose={closeChildrenPanel} wide>
+        <div className="flex flex-col h-full">
+          {/* Static top bar — pinned; only the content below slides as you drill */}
+          <DrawerTopBar
+            crumbs={topCrumbs}
+            onBack={topBack}
+            showOpen={!!detailEntity}
+            onOpen={() => handleChildDrillDown(detailEntity)}
+          />
+          <div className="relative flex-1 min-h-0 overflow-hidden">
+            {/* List view — eases back as the entity summary takes focus */}
+            <div className={`absolute inset-0 transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${detailEntity ? '-translate-x-8 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
+              {retainedFilter && (
+                <ChildrenListView
+                  entity={listEntity}
+                  filter={retainedFilter === 'all' ? null : retainedFilter}
+                  onBack={closeChildrenPanel}
+                  onDrillDown={(child) => setDetailStack([{ entity: child, filter: null }])}
+                  deep
+                  labelOverrides={B_LABEL_OVERRIDES}
+                  hideHeader
+                  hideTypeBadge
+                  statusAsDot
+                  showManagementFilter
+                  subtleUnmanaged
+                  typeTitle
+                />
+              )}
+            </div>
+            {/* Entity detail view — slides in from the right with a soft depth shadow */}
+            <div className={`absolute inset-0 bg-white dark:bg-zinc-900 shadow-[-16px_0_40px_-16px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${detailEntity ? 'translate-x-0' : 'translate-x-full pointer-events-none'}`}>
+              {(detailEntity || retainedEntity) && (
+                <DrawerEntityDetail
+                  entity={detailEntity || retainedEntity}
+                  filter={detailFilter}
+                  onFilterChange={(f) => setDetailStack(s => s.length ? [...s.slice(0, -1), { ...s[s.length - 1], filter: f }] : s)}
+                  pkg={detailPkg}
+                  siblings={childEntities}
+                  showFuture={showFuture}
+                  onDrillDown={(child) => setDetailStack(s => [...s, { entity: child, filter: null }])}
+                  onPackageClick={(pkg) => setDetailPkg(pkg)}
+                />
+              )}
+            </div>
           </div>
         </div>
       </Drawer>
@@ -664,6 +806,6 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
       <Drawer open={!!selectedPkg} onClose={() => setSelectedPkg(null)}>
         <PackageDetail pkg={retainedPkg} scope={currentEntity} onClose={() => setSelectedPkg(null)} />
       </Drawer>
-    </div>
+    </>
   );
 }

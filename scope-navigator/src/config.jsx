@@ -1,7 +1,7 @@
 import {
   Building2, Store, Users, Network,
   Mail, Send, ShieldCheck, Bug, Globe, Shield, Monitor, Cloud, Key, Package,
-  Layers, Tag, Split, Briefcase, EyeOff,
+  Layers, Tag, Split, Briefcase, EyeOff, CaptionsOff,
 } from 'lucide-react';
 
 // ── Entity type + partner capability taxonomy ──────────────────────
@@ -121,8 +121,8 @@ export const managementModeConfig = {
   },
   unmanaged: {
     label: 'Unmanaged',
-    Icon: EyeOff,
-    icon: EyeOff,
+    Icon: CaptionsOff,
+    icon: CaptionsOff,
     bgClass: 'bg-zinc-100 dark:bg-zinc-800',
     textClass: 'text-zinc-600 dark:text-zinc-400',
     borderClass: 'border-zinc-200 dark:border-zinc-700',
@@ -212,11 +212,24 @@ export const statusConfig = {
   suspended: { pill: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',         dot: 'bg-red-400',   label: 'Suspended', desc: 'Access paused — billing or policy hold' },
 };
 
-export function StatusBadge({ status }) {
+// Status is visualized as a simple colored dot (hover for meaning). Pass
+// `showLabel` in pickers/menus where the text is needed alongside the dot.
+export function StatusBadge({ status, showLabel = false }) {
+  const cfg = statusConfig[status];
+  if (!cfg) return null;
+  if (showLabel) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
+        {cfg.label}
+      </span>
+    );
+  }
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${statusConfig[status].pill}`}>
-      {statusConfig[status].label}
-    </span>
+    <span
+      className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`}
+      title={cfg.desc ? `${cfg.label} — ${cfg.desc}` : cfg.label}
+    />
   );
 }
 
@@ -273,7 +286,10 @@ export function applySorting(items, sortBy) {
     case 'name-asc':      return sorted.sort((a, b) => a.name.localeCompare(b.name));
     case 'name-desc':     return sorted.sort((a, b) => b.name.localeCompare(a.name));
     case 'status':        return sorted.sort((a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3));
-    case 'level':         return sorted.sort((a, b) => (typeDepth[a.type] ?? 99) - (typeDepth[b.type] ?? 99));
+    case 'level':         return sorted.sort((a, b) => {
+      const rank = (t) => { const i = entityTypeOrder.indexOf(t); return i === -1 ? 99 : i; };
+      return rank(a.type) - rank(b.type);
+    });
     case 'children-desc': return sorted.sort((a, b) => (b.children?.length || 0) - (a.children?.length || 0));
     case 'children-asc':  return sorted.sort((a, b) => (a.children?.length || 0) - (b.children?.length || 0));
     default:              return sorted;
