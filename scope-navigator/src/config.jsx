@@ -1,5 +1,5 @@
 import {
-  Building2, Store, Users, Network,
+  Building2, Store, Users, Network, Boxes,
   Mail, Send, ShieldCheck, Bug, Globe, Shield, Monitor, Cloud, Key, Package,
   Layers, Tag, Split, Briefcase, EyeOff, CaptionsOff,
 } from 'lucide-react';
@@ -91,6 +91,24 @@ export const displayTypeOrder = ['distributor', 'reseller', 'customer'];
 // @deprecated - use displayTypeConfig with getDisplayType() instead
 export const typeConfig = {
   ...displayTypeConfig,
+  // Synthetic "All Accounts" root scope — neutral zinc so it reads as the
+  // top-of-hierarchy aggregate rather than any one entity tier. Lets the
+  // shared entity-detail view render the root landing without special-casing
+  // every typeConfig[entity.type] lookup.
+  root: {
+    label: 'All Accounts',
+    Icon: Boxes,
+    icon: Boxes,
+    color: 'text-white',
+    iconColor: 'text-white',
+    textClass: 'text-white',
+    bgClass: 'bg-zinc-700',
+    ring: 'ring-zinc-800 dark:ring-zinc-500',
+    stroke: '#3f3f46',
+    tintColor: 'text-zinc-700 dark:text-zinc-300',
+    legacyColor: 'text-white',
+    bg: 'bg-zinc-700',
+  },
   partner: {
     label: 'Reseller',
     Icon: Network,

@@ -11,7 +11,7 @@ import {
   XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell
 } from 'recharts';
 import { typeConfig, statusConfig, StatusBadge, entityTypeOrder, isEntityUnmanaged } from './config';
-import { countDescendantsByType, hash, VIPRE_PACKAGES, VIPRE_ADD_ONS, genPartnerPackages, genCustomerPackages } from './data';
+import { countDescendantsByType, hash, VIPRE_PACKAGES, VIPRE_ADD_ONS, genPartnerPackages, genCustomerPackages, collectPackageAdoption } from './data';
 
 // ── Hooks ──
 function useCountUp(target, duration = 600) {
@@ -410,8 +410,12 @@ function PackageAdoptionTable({ entityId, entityType, onPackageClick }) {
     );
   }
 
-  // Partner (distributor / reseller) view
-  const packages = genPartnerPackages(entityId);
+  // Partner (distributor / reseller) view — and the synthetic root ("All
+  // Accounts"), which reuses the same table but draws aggregate adoption
+  // rolled up across the whole tree instead of one entity's package list.
+  const packages = entityType === 'root'
+    ? collectPackageAdoption(null).packages.map(p => ({ ...p, customers: p.entities, util: p.avgUtil }))
+    : genPartnerPackages(entityId);
   return (
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
       <div className="grid grid-cols-[1fr_72px_72px_48px] gap-2 px-4 py-2 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 text-[10px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
@@ -1391,7 +1395,11 @@ export function EntityIdentityHeader({ entity, scrolled = false, statusAsDot = f
             </span>
           </div>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <CopyableUUID id={entity.id} />
+            {entity.type === 'root' ? (
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">Global view across all accounts</span>
+            ) : (
+              <CopyableUUID id={entity.id} />
+            )}
             {entity.region && (
               <>
                 <span className="text-zinc-200 dark:text-zinc-700 text-[10px]">&middot;</span>
@@ -1472,9 +1480,16 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
   const isUnmanagedDistributor = isUnmanaged && entity.type === 'distributor';
   const adoption = biz.productAdoption || {};
 
+  // Direct child-type counts for the Descendants cards. The synthetic root
+  // ("All Accounts") rolls up the FULL tree instead — its descendants drawer
+  // is deep, so the card counts must match the totals you'd see drilling in.
   const childTypeCounts = {};
   if (hasChildren) {
-    for (const child of entity.children) childTypeCounts[child.type] = (childTypeCounts[child.type] || 0) + 1;
+    if (entity.type === 'root') {
+      Object.assign(childTypeCounts, countDescendantsByType(entity.children));
+    } else {
+      for (const child of entity.children) childTypeCounts[child.type] = (childTypeCounts[child.type] || 0) + 1;
+    }
   }
   const childTypeEntries = entityTypeOrder.filter(t => childTypeCounts[t]).map(t => ({ type: t, count: childTypeCounts[t] }));
 

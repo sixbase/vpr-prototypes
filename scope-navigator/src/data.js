@@ -1123,6 +1123,122 @@ export function collectPackageAdoption(entity) {
   return overall;
 }
 
+// Synthetic "All Accounts" root entity — folds the whole population into a
+// single object shaped like makeEntity's output, so the rich entity-detail
+// view can render the root landing identically to any drilled-in scope.
+// Device / product totals sum over customer leaves (the real endpoints);
+// ops + business figures roll up across every node; compliance, opportunity,
+// and agent-version mixes are averaged. Walks the frozen mockData tree once
+// (no device generation), so it's cheap to memoize on mount.
+export function buildRootAggregateEntity() {
+  const products = {
+    endpoint: { devicesProtected: 0, threatsBlocked: 0, scansCompleted: 0, complianceRate: 0 },
+    emailSecurity: { emailsScanned: 0, threatsCaught: 0, phishingBlocked: 0, spamFiltered: 0 },
+    safeSend: { emailsSent: 0, attachmentsScanned: 0, dlpTriggers: 0, recipientsVerified: 0 },
+  };
+  let devices = 0, licenses = 0, threatsBlocked = 0;
+  let criticalIssues = 0, configDrift = 0, quarantineDepth = 0;
+  let complianceSum = 0, complianceCount = 0;
+  let av42 = 0, av41 = 0, av3 = 0, avCount = 0;
+  let domHealthy = 0, domIssues = 0;
+  let epComplianceSum = 0, epComplianceCount = 0;
+  let mrr = 0, seatsLicensed = 0, seatsConsumed = 0, oppSum = 0, oppCount = 0;
+  let renew30 = 0, renew60 = 0, churnRisk = 0, activeTrials = 0;
+
+  function walk(nodes) {
+    for (const n of nodes) {
+      const ops = n.operations || {};
+      criticalIssues += ops.criticalIssues || 0;
+      configDrift += ops.configDrift || 0;
+      quarantineDepth += ops.quarantineDepth || 0;
+      if (typeof ops.complianceScore === 'number') { complianceSum += ops.complianceScore; complianceCount++; }
+      if (ops.agentVersions) {
+        av42 += ops.agentVersions['v4.2'] || 0;
+        av41 += ops.agentVersions['v4.1'] || 0;
+        av3 += ops.agentVersions['v3.x'] || 0;
+        avCount++;
+      }
+      if (ops.domainHealth) { domHealthy += ops.domainHealth.healthy || 0; domIssues += ops.domainHealth.issues || 0; }
+
+      licenses += n.licenses || 0;
+      threatsBlocked += n.threatsBlocked || 0;
+
+      if (n.type === 'customer') {
+        devices += n.devices || 0;
+        const p = n.products || {};
+        if (p.endpoint) {
+          products.endpoint.devicesProtected += p.endpoint.devicesProtected || 0;
+          products.endpoint.threatsBlocked += p.endpoint.threatsBlocked || 0;
+          products.endpoint.scansCompleted += p.endpoint.scansCompleted || 0;
+          epComplianceSum += p.endpoint.complianceRate || 0; epComplianceCount++;
+        }
+        if (p.emailSecurity) {
+          products.emailSecurity.emailsScanned += p.emailSecurity.emailsScanned || 0;
+          products.emailSecurity.threatsCaught += p.emailSecurity.threatsCaught || 0;
+          products.emailSecurity.phishingBlocked += p.emailSecurity.phishingBlocked || 0;
+          products.emailSecurity.spamFiltered += p.emailSecurity.spamFiltered || 0;
+        }
+        if (p.safeSend) {
+          products.safeSend.emailsSent += p.safeSend.emailsSent || 0;
+          products.safeSend.attachmentsScanned += p.safeSend.attachmentsScanned || 0;
+          products.safeSend.dlpTriggers += p.safeSend.dlpTriggers || 0;
+          products.safeSend.recipientsVerified += p.safeSend.recipientsVerified || 0;
+        }
+        const b = n.business || {};
+        seatsLicensed += b.seatsLicensed || 0;
+        seatsConsumed += b.seatsConsumed || 0;
+      }
+
+      const b = n.business || {};
+      mrr += b.mrr || 0;
+      if (typeof b.opportunityScore === 'number') { oppSum += b.opportunityScore; oppCount++; }
+      renew30 += b.renewals?.d30 || 0;
+      renew60 += b.renewals?.d60 || 0;
+      churnRisk += b.churnRisk || 0;
+      activeTrials += b.activeTrials || 0;
+
+      if (n.children?.length) walk(n.children);
+    }
+  }
+  walk(mockData);
+
+  products.endpoint.complianceRate = epComplianceCount ? Math.round(epComplianceSum / epComplianceCount) : 0;
+  const normPct = (a) => (avCount ? Math.round(a / avCount) : 0);
+
+  return {
+    id: 'all-accounts',
+    name: 'All Accounts',
+    type: 'root',
+    partnerCapability: null,
+    managementMode: null,
+    status: 'active',
+    children: mockData,
+    devices,
+    licenses,
+    threatsBlocked,
+    operations: {
+      criticalIssues,
+      complianceScore: complianceCount ? Math.round(complianceSum / complianceCount) : 0,
+      configDrift,
+      agentVersions: { 'v4.2': normPct(av42), 'v4.1': normPct(av41), 'v3.x': normPct(av3) },
+      domainHealth: { total: domHealthy + domIssues, healthy: domHealthy, issues: domIssues },
+      quarantineDepth,
+    },
+    products,
+    business: {
+      mrr,
+      seatsLicensed,
+      seatsConsumed,
+      utilizationRate: seatsLicensed ? Math.round((seatsConsumed / seatsLicensed) * 100) / 10 : 0,
+      opportunityScore: oppCount ? Math.round(oppSum / oppCount) : 50,
+      renewals: { d30: renew30, d60: renew60 },
+      churnRisk,
+      activeTrials,
+      productAdoption: {},
+    },
+  };
+}
+
 export function computeDeviceStats(input) {
   // Transitional compatibility layer: accept either a bare Device[] (legacy
   // callers) or the new { devices, included, excluded } wrapper returned by

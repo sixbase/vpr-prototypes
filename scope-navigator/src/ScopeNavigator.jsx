@@ -214,8 +214,8 @@ function BreadcrumbSegment({ label, isActive, isRoot, entityType, entity, pathIn
   const hasDropdown = dropdownItems?.length > 0;
 
   return (
-    <div className="relative flex items-center flex-shrink-0">
-      <div className={`flex items-center gap-2 rounded-lg text-sm font-medium transition-colors duration-150 min-h-[40px] ${
+    <div className={`relative flex items-center ${isActive ? 'min-w-0' : 'flex-shrink-0'}`}>
+      <div className={`flex items-center gap-2 rounded-lg text-sm font-medium transition-colors duration-150 min-h-[40px] ${isActive ? 'min-w-0' : ''} ${
         isTeleported ? 'animate-teleport-highlight' : ''
       } ${
         isActive
@@ -266,7 +266,7 @@ function SearchTrigger({ onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 pl-3 pr-2.5 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-400 hover:text-zinc-500 hover:border-zinc-300 dark:hover:text-zinc-300 dark:hover:border-zinc-600 transition-colors cursor-pointer flex-shrink-0 w-full sm:w-[200px]"
+      className="flex items-center gap-2 pl-3 pr-2.5 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-400 hover:text-zinc-500 hover:border-zinc-300 dark:hover:text-zinc-300 dark:hover:border-zinc-600 transition-colors cursor-pointer flex-shrink-0 w-full md:w-[200px]"
     >
       <Search className="w-4 h-4 flex-shrink-0" />
       <span className="text-[13px]">Search entities...</span>
@@ -361,7 +361,7 @@ export default function ScopeNavigator({ path, onNavigate, onSearchOpen, telepor
   const LABEL_CAP = 180;
   const GAP = 28; // chevron + gaps between segments
   const ELL = 44; // the "…" chip
-  const reserved = w >= 640 ? 400 : 80; // Future State (+ inline search on sm+)
+  const reserved = w >= 768 ? 400 : 56; // Future State (+ inline search) only shares the row at md+
   const avail = w - reserved;
   const segW = (seg) => {
     const len = seg.isRoot ? 12 : (seg.label || '').length;
@@ -386,7 +386,7 @@ export default function ScopeNavigator({ path, onNavigate, onSearchOpen, telepor
 
   return (
     <nav ref={navRef} className="bg-transparent px-4 py-3">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0 whitespace-nowrap">
         <div ref={innerRef} className="flex items-center gap-3 flex-1 min-w-0">
           {visibleSegments.map((seg, i) => {
@@ -420,7 +420,7 @@ export default function ScopeNavigator({ path, onNavigate, onSearchOpen, telepor
           }`}
         >
           <Zap className="w-3 h-3" />
-          <span className="hidden sm:inline">Future State</span>
+          <span className="hidden md:inline">Future State</span>
         </button>
         </div>
         <SearchTrigger onClick={onSearchOpen} />
