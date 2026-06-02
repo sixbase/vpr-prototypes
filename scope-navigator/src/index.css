@@ -8,13 +8,11 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Typeface — Rubik, from the design system (replaces Inter). */
+  /* Typeface — Rubik, from the design system. */
   --font-sans: var(--vds-font-sans);
 
-  /* Semantic color tokens bridged from the DS. These are ADDITIVE — they create
-     new utilities (bg-surface, text-ink, text-primary, border-line, text-success…)
-     that resolve to DS tokens and flip in dark mode automatically. Existing
-     palette classes are untouched; migrate them to these incrementally. */
+  /* Semantic role tokens — additive utilities (bg-surface, text-ink, text-primary,
+     border-line, text-success…) that resolve to DS tokens and flip in dark mode. */
   --color-canvas: var(--vds-canvas);
   --color-surface: var(--vds-surface);
   --color-surface-raised: var(--vds-surface-raised);
@@ -27,6 +25,8 @@
   --color-primary-hover: var(--vds-primary-hover);
   --color-primary-soft: var(--vds-primary-soft);
   --color-on-primary: var(--vds-on-primary);
+  --color-focus-ring: var(--vds-focus-ring);
+  --color-white: var(--vds-white);
   --color-success: var(--vds-success);
   --color-success-soft: var(--vds-success-soft);
   --color-warning: var(--vds-warning);
@@ -35,6 +35,115 @@
   --color-danger-soft: var(--vds-danger-soft);
   --color-info: var(--vds-info);
   --color-info-soft: var(--vds-info-soft);
+
+  /* Every DS primitive ramp — consumable as bg-{ramp}-{step}, text-…, border-… */
+  --color-graphite-50: var(--vds-graphite-50);
+  --color-graphite-100: var(--vds-graphite-100);
+  --color-graphite-200: var(--vds-graphite-200);
+  --color-graphite-300: var(--vds-graphite-300);
+  --color-graphite-400: var(--vds-graphite-400);
+  --color-graphite-500: var(--vds-graphite-500);
+  --color-graphite-600: var(--vds-graphite-600);
+  --color-graphite-700: var(--vds-graphite-700);
+  --color-graphite-800: var(--vds-graphite-800);
+  --color-graphite-900: var(--vds-graphite-900);
+  --color-graphite-950: var(--vds-graphite-950);
+
+  --color-midnight-50: var(--vds-midnight-50);
+  --color-midnight-100: var(--vds-midnight-100);
+  --color-midnight-200: var(--vds-midnight-200);
+  --color-midnight-300: var(--vds-midnight-300);
+  --color-midnight-400: var(--vds-midnight-400);
+  --color-midnight-500: var(--vds-midnight-500);
+  --color-midnight-600: var(--vds-midnight-600);
+  --color-midnight-700: var(--vds-midnight-700);
+  --color-midnight-800: var(--vds-midnight-800);
+  --color-midnight-900: var(--vds-midnight-900);
+  --color-midnight-950: var(--vds-midnight-950);
+
+  --color-azure-50: var(--vds-azure-50);
+  --color-azure-100: var(--vds-azure-100);
+  --color-azure-200: var(--vds-azure-200);
+  --color-azure-300: var(--vds-azure-300);
+  --color-azure-400: var(--vds-azure-400);
+  --color-azure-500: var(--vds-azure-500);
+  --color-azure-600: var(--vds-azure-600);
+  --color-azure-700: var(--vds-azure-700);
+  --color-azure-800: var(--vds-azure-800);
+  --color-azure-900: var(--vds-azure-900);
+  --color-azure-950: var(--vds-azure-950);
+
+  --color-harbor-50: var(--vds-harbor-50);
+  --color-harbor-100: var(--vds-harbor-100);
+  --color-harbor-200: var(--vds-harbor-200);
+  --color-harbor-300: var(--vds-harbor-300);
+  --color-harbor-400: var(--vds-harbor-400);
+  --color-harbor-500: var(--vds-harbor-500);
+  --color-harbor-600: var(--vds-harbor-600);
+  --color-harbor-700: var(--vds-harbor-700);
+  --color-harbor-800: var(--vds-harbor-800);
+  --color-harbor-900: var(--vds-harbor-900);
+  --color-harbor-950: var(--vds-harbor-950);
+
+  --color-emerald-50: var(--vds-emerald-50);
+  --color-emerald-100: var(--vds-emerald-100);
+  --color-emerald-200: var(--vds-emerald-200);
+  --color-emerald-300: var(--vds-emerald-300);
+  --color-emerald-400: var(--vds-emerald-400);
+  --color-emerald-500: var(--vds-emerald-500);
+  --color-emerald-600: var(--vds-emerald-600);
+  --color-emerald-700: var(--vds-emerald-700);
+  --color-emerald-800: var(--vds-emerald-800);
+  --color-emerald-900: var(--vds-emerald-900);
+  --color-emerald-950: var(--vds-emerald-950);
+
+  --color-amber-50: var(--vds-amber-50);
+  --color-amber-100: var(--vds-amber-100);
+  --color-amber-200: var(--vds-amber-200);
+  --color-amber-300: var(--vds-amber-300);
+  --color-amber-400: var(--vds-amber-400);
+  --color-amber-500: var(--vds-amber-500);
+  --color-amber-600: var(--vds-amber-600);
+  --color-amber-700: var(--vds-amber-700);
+  --color-amber-800: var(--vds-amber-800);
+  --color-amber-900: var(--vds-amber-900);
+  --color-amber-950: var(--vds-amber-950);
+
+  --color-rose-50: var(--vds-rose-50);
+  --color-rose-100: var(--vds-rose-100);
+  --color-rose-200: var(--vds-rose-200);
+  --color-rose-300: var(--vds-rose-300);
+  --color-rose-400: var(--vds-rose-400);
+  --color-rose-500: var(--vds-rose-500);
+  --color-rose-600: var(--vds-rose-600);
+  --color-rose-700: var(--vds-rose-700);
+  --color-rose-800: var(--vds-rose-800);
+  --color-rose-900: var(--vds-rose-900);
+  --color-rose-950: var(--vds-rose-950);
+
+  --color-orchid-50: var(--vds-orchid-50);
+  --color-orchid-100: var(--vds-orchid-100);
+  --color-orchid-200: var(--vds-orchid-200);
+  --color-orchid-300: var(--vds-orchid-300);
+  --color-orchid-400: var(--vds-orchid-400);
+  --color-orchid-500: var(--vds-orchid-500);
+  --color-orchid-600: var(--vds-orchid-600);
+  --color-orchid-700: var(--vds-orchid-700);
+  --color-orchid-800: var(--vds-orchid-800);
+  --color-orchid-900: var(--vds-orchid-900);
+  --color-orchid-950: var(--vds-orchid-950);
+
+  --color-clay-50: var(--vds-clay-50);
+  --color-clay-100: var(--vds-clay-100);
+  --color-clay-200: var(--vds-clay-200);
+  --color-clay-300: var(--vds-clay-300);
+  --color-clay-400: var(--vds-clay-400);
+  --color-clay-500: var(--vds-clay-500);
+  --color-clay-600: var(--vds-clay-600);
+  --color-clay-700: var(--vds-clay-700);
+  --color-clay-800: var(--vds-clay-800);
+  --color-clay-900: var(--vds-clay-900);
+  --color-clay-950: var(--vds-clay-950);
 }
 
 @keyframes palette-in {
