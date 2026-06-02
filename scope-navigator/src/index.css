@@ -1,8 +1,9 @@
 @import "tailwindcss";
 /* Vipre Design System tokens — :root{--vds-*} + .dark{} overrides.
-   Single source of truth lives in ../../vipre-design-system; rebuilt there with
-   `npm run build:tokens`. We consume only the compiled custom properties. */
-@import "vipre-design-system/tokens.css";
+   Vendored snapshot (see src/vipre-tokens.css header). Source of truth lives in
+   ../../vipre-design-system, rebuilt there with `npm run build:tokens`; we copy
+   the compiled output in so the Pages build stays self-contained. */
+@import "./vipre-tokens.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 

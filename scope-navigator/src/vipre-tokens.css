@@ -1,0 +1,121 @@
+/* Vendored from vipre-design-system dist/vipre-tokens.css (build:tokens output).
+   Snapshot copied in so the Pages build is self-contained — it no longer
+   depends on the sibling design-system repo at build time. Re-copy after
+   changing DS tokens: (cd ../../vipre-design-system && npm run build:tokens)
+   then copy dist/vipre-tokens.css over this file. */
+:root {
+  --vds-graphite-0: #ffffff;
+  --vds-graphite-50: #f7f8fa;
+  --vds-graphite-100: #eff1f5;
+  --vds-graphite-200: #e2e6ed;
+  --vds-graphite-300: #cbd2dd;
+  --vds-graphite-400: #9aa4b4;
+  --vds-graphite-500: #6b7585;
+  --vds-graphite-600: #4d5666;
+  --vds-graphite-700: #3a424f;
+  --vds-graphite-800: #262c36;
+  --vds-graphite-900: #161b22;
+  --vds-graphite-950: #0d1117;
+  --vds-iris-50: #f0f1fe;
+  --vds-iris-100: #e2e4fd;
+  --vds-iris-200: #c8cbfb;
+  --vds-iris-300: #a6a8f7;
+  --vds-iris-400: #8482f0;
+  --vds-iris-500: #6963e8;
+  --vds-iris-600: #564ddb;
+  --vds-iris-700: #443bb8;
+  --vds-iris-800: #383293;
+  --vds-iris-900: #2f2c74;
+  --vds-emerald-50: #ecfdf5;
+  --vds-emerald-500: #10b981;
+  --vds-emerald-600: #059669;
+  --vds-emerald-700: #047857;
+  --vds-amber-50: #fffbeb;
+  --vds-amber-500: #f59e0b;
+  --vds-amber-600: #d97706;
+  --vds-amber-700: #b45309;
+  --vds-rose-50: #fef2f2;
+  --vds-rose-500: #ef4444;
+  --vds-rose-600: #dc2626;
+  --vds-rose-700: #b91c1c;
+  --vds-sky-50: #eff6ff;
+  --vds-sky-500: #3b82f6;
+  --vds-sky-600: #2563eb;
+  --vds-sky-700: #1d4ed8;
+  --vds-font-sans: 'Rubik', ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --vds-radius-sm: 0.375rem;
+  --vds-radius-md: 0.5rem;
+  --vds-radius-lg: 0.75rem;
+  --vds-radius-xl: 1rem;
+  --vds-shadow-xs: 0 1px 2px 0 rgb(13 17 23 / 0.06);
+  --vds-shadow-sm: 0 1px 3px 0 rgb(13 17 23 / 0.08), 0 1px 2px -1px rgb(13 17 23 / 0.08);
+  --vds-shadow-md: 0 4px 12px -2px rgb(13 17 23 / 0.12), 0 2px 6px -2px rgb(13 17 23 / 0.08);
+  --vds-shadow-lg: 0 12px 28px -6px rgb(13 17 23 / 0.18), 0 6px 12px -6px rgb(13 17 23 / 0.12);
+  --vds-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --vds-dur-fast: 120ms;
+  --vds-dur-base: 200ms;
+  --vds-space-0: 0;
+  --vds-space-1: 0.25rem;
+  --vds-space-2: 0.5rem;
+  --vds-space-3: 0.75rem;
+  --vds-space-4: 1rem;
+  --vds-space-5: 1.25rem;
+  --vds-space-6: 1.5rem;
+  --vds-space-8: 2rem;
+  --vds-space-10: 2.5rem;
+  --vds-space-12: 3rem;
+  --vds-space-16: 4rem;
+  --vds-space-20: 5rem;
+  --vds-space-24: 6rem;
+  --vds-container: 1200px;
+  --vds-gutter: var(--vds-space-6);
+  --vds-section: var(--vds-space-12);
+  --vds-columns: 12;
+  --vds-canvas: var(--vds-graphite-50);
+  --vds-surface: var(--vds-graphite-0);
+  --vds-surface-raised: var(--vds-graphite-0);
+  --vds-line: var(--vds-graphite-200);
+  --vds-line-strong: var(--vds-graphite-300);
+  --vds-ink: var(--vds-graphite-900);
+  --vds-ink-muted: var(--vds-graphite-600);
+  --vds-ink-subtle: var(--vds-graphite-500);
+  --vds-primary: var(--vds-iris-600);
+  --vds-primary-hover: var(--vds-iris-700);
+  --vds-on-primary: var(--vds-graphite-0);
+  --vds-primary-soft: var(--vds-iris-50);
+  --vds-success: var(--vds-emerald-600);
+  --vds-success-soft: var(--vds-emerald-50);
+  --vds-warning: var(--vds-amber-600);
+  --vds-warning-soft: var(--vds-amber-50);
+  --vds-danger: var(--vds-rose-600);
+  --vds-danger-soft: var(--vds-rose-50);
+  --vds-info: var(--vds-sky-600);
+  --vds-info-soft: var(--vds-sky-50);
+  --vds-focus-ring: var(--vds-iris-500);
+}
+
+.dark {
+  --vds-canvas: var(--vds-graphite-950);
+  --vds-surface: var(--vds-graphite-900);
+  --vds-surface-raised: var(--vds-graphite-800);
+  --vds-line: var(--vds-graphite-800);
+  --vds-line-strong: var(--vds-graphite-700);
+  --vds-ink: var(--vds-graphite-50);
+  --vds-ink-muted: var(--vds-graphite-400);
+  --vds-ink-subtle: var(--vds-graphite-500);
+  --vds-primary: var(--vds-iris-500);
+  --vds-primary-hover: var(--vds-iris-400);
+  --vds-on-primary: var(--vds-graphite-950);
+  --vds-primary-soft: color-mix(in oklab, var(--vds-iris-500) 16%, transparent);
+  --vds-success: var(--vds-emerald-500);
+  --vds-success-soft: color-mix(in oklab, var(--vds-emerald-500) 16%, transparent);
+  --vds-warning: var(--vds-amber-500);
+  --vds-warning-soft: color-mix(in oklab, var(--vds-amber-500) 16%, transparent);
+  --vds-danger: var(--vds-rose-500);
+  --vds-danger-soft: color-mix(in oklab, var(--vds-rose-500) 16%, transparent);
+  --vds-info: var(--vds-sky-500);
+  --vds-info-soft: color-mix(in oklab, var(--vds-sky-500) 16%, transparent);
+  --vds-focus-ring: var(--vds-iris-400);
+  color-scheme: dark;
+}
