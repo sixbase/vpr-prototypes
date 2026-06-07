@@ -10,6 +10,10 @@
   gap: 0.5rem;
   cursor: pointer;
   position: relative;
+  // Align by box, not text baseline. As an inline-flex, a baseline-aligned box
+  // shifts the line box when its content changes (e.g. the checked ::after
+  // appears) — which made selected table rows jump height. Middle is stable.
+  vertical-align: middle;
   @include type.step(body);
 
   &--disabled {

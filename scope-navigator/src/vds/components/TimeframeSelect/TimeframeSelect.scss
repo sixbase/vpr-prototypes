@@ -1,0 +1,184 @@
+// ============================================================================
+// TimeframeSelect — the dashboard time-window control. Two surfaces:
+//   • the dropdown pill trigger + its preset menu (composes Popover/Surface)
+//   • the segmented inline quick-toggle
+// Token-bound throughout; chrome echoes Input/Select (neutral line + recessed
+// fill + focus-ring) so it sits naturally beside other controls.
+// ============================================================================
+@use '../../styles/typography' as type;
+
+.vds-timeframe {
+  --vds-tf-hover: color-mix(in oklab, var(--vds-ink) 6%, transparent);
+
+  // ---- shared sizing ----
+  &--sm { --vds-tf-h: 2rem; }
+  &--md { --vds-tf-h: 2.25rem; }
+
+  // ====================================================================
+  // Dropdown trigger pill
+  // ====================================================================
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vds-space-2);
+    height: var(--vds-tf-h, 2.25rem);
+    padding: 0 var(--vds-space-2) 0 var(--vds-space-3);
+    border: 1px solid var(--vds-line);
+    border-radius: var(--vds-radius-sm);
+    background-color: var(--vds-surface);
+    color: var(--vds-ink);
+    font-family: var(--vds-font-sans);
+    @include type.step(body);
+    cursor: pointer;
+    transition:
+      border-color var(--vds-dur-fast) var(--vds-ease-out),
+      background-color var(--vds-dur-fast) var(--vds-ease-out),
+      box-shadow var(--vds-dur-fast) var(--vds-ease-out);
+
+    &:hover { background-color: var(--vds-tf-hover); }
+    &:focus-visible {
+      outline: none;
+      border-color: var(--vds-focus-ring);
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--vds-focus-ring) 35%, transparent);
+    }
+    &[aria-expanded='true'] {
+      border-color: var(--vds-focus-ring);
+    }
+  }
+  &--sm.vds-timeframe__trigger { @include type.step(detail); }
+
+  &__lead { color: var(--vds-ink-subtle); }
+  &__value { font-weight: 500; white-space: nowrap; }
+  &__caret { color: var(--vds-ink-subtle); margin-left: var(--vds-space-1); }
+
+  // ====================================================================
+  // Preset menu (inside the Popover panel)
+  // ====================================================================
+  &__pop { min-width: 220px; }
+
+  &__menu {
+    display: flex;
+    flex-direction: column;
+    padding: var(--vds-space-1);
+  }
+
+  &__option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vds-space-3);
+    width: 100%;
+    padding: var(--vds-space-2) var(--vds-space-2);
+    border: 0;
+    border-radius: var(--vds-radius-sm);
+    background: transparent;
+    color: var(--vds-ink);
+    font-family: var(--vds-font-sans);
+    @include type.step(body);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
+
+    &:hover { background-color: var(--vds-tf-hover); }
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--vds-focus-ring) 45%, transparent);
+    }
+    &--active {
+      color: var(--vds-primary);
+      font-weight: 500;
+      background-color: var(--vds-primary-soft);
+    }
+  }
+  &__option-check { color: var(--vds-primary); flex-shrink: 0; }
+
+  &__sep {
+    height: 1px;
+    margin: var(--vds-space-1) 0;
+    background-color: var(--vds-line);
+  }
+
+  // ---- custom range editor ----
+  &__custom { padding: var(--vds-space-2); }
+  &__custom-label {
+    display: block;
+    margin-bottom: var(--vds-space-2);
+    @include type.step(eyebrow);
+    text-transform: uppercase;
+    color: var(--vds-ink-subtle);
+  }
+  &__custom-row {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-2);
+  }
+  &__custom-dash { color: var(--vds-ink-subtle); }
+  &__apply {
+    width: 100%;
+    margin-top: var(--vds-space-2);
+    padding: var(--vds-space-1) var(--vds-space-2);
+    height: 2rem;
+    border: 0;
+    border-radius: var(--vds-radius-sm);
+    background-color: var(--vds-primary);
+    color: var(--vds-on-primary, #fff);
+    font-family: var(--vds-font-sans);
+    @include type.step(detail);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity var(--vds-dur-fast) var(--vds-ease-out);
+
+    &:hover { opacity: 0.92; }
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--vds-focus-ring) 45%, transparent);
+    }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  // ====================================================================
+  // Segmented variant — connected quick-toggle buttons on a track.
+  // ====================================================================
+  &--segmented {
+    display: inline-flex;
+    align-items: stretch;
+    padding: 2px;
+    border: 1px solid var(--vds-line);
+    border-radius: var(--vds-radius-md);
+    background-color: color-mix(in oklab, var(--vds-ink) 4%, transparent);
+  }
+  &__seg {
+    height: calc(var(--vds-tf-h, 2.25rem) - 4px);
+    padding: 0 var(--vds-space-3);
+    border: 0;
+    border-radius: calc(var(--vds-radius-md) - 2px);
+    background: transparent;
+    color: var(--vds-ink-muted);
+    font-family: var(--vds-font-sans);
+    @include type.step(detail);
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--vds-dur-fast) var(--vds-ease-out),
+      color var(--vds-dur-fast) var(--vds-ease-out),
+      box-shadow var(--vds-dur-fast) var(--vds-ease-out);
+
+    &:hover { color: var(--vds-ink); }
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--vds-focus-ring) 45%, transparent);
+    }
+    &--active {
+      background-color: var(--vds-surface);
+      color: var(--vds-ink);
+      box-shadow: var(--vds-shadow-xs);
+    }
+  }
+}
+
+.dark .vds-timeframe {
+  --vds-tf-hover: color-mix(in oklab, var(--vds-white) 8%, transparent);
+
+  &--segmented { background-color: color-mix(in oklab, var(--vds-white) 5%, transparent); }
+}

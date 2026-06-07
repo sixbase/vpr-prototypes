@@ -1,83 +1,68 @@
 // ============================================================================
 // ScopeNavigator — the MSP hierarchy breadcrumb bar. Composes Surface (popovers)
-// + Input (dropdown search) + Icon. The bar itself is a FIXED product-chrome
-// surface: always the Midnight navy in both themes (like the product sidebar),
-// so its contents read light-on-navy regardless of light/dark. Its popovers,
-// by contrast, are real Surfaces and follow the page theme.
+// + Input (dropdown search) + Icon.
 //
-// White-alpha overlays (translucent fills/borders on the navy) are expressed as
-// color-mix on the --vds-white token, never raw rgba — staying token-bound.
+// THEME-FOLLOWING: the bar is built from plain SEMANTIC tokens (--vds-canvas /
+// surface / ink / line / shadow), so it renders LIGHT in light mode and switches
+// to the product navy under a `.dark` ancestor — no forced theme. Elevation in
+// light mode is carried by borders + shadows (light surfaces are all white); in
+// dark mode by the lighter Midnight steps. Translucent hover fills are color-mix
+// on --vds-ink (dark text in light mode, near-white in dark), so they flip for
+// free. The handful of dark-only refinements live in the `.dark .vds-scope`
+// block at the bottom (the popovers read too bright at the overlay step on navy,
+// so they drop one step and their dividers step up to compensate).
+//
+// The bar is purely the scope trail — search and product toggles (e.g. "Future
+// State") are separate components composed alongside it. It measures its own
+// width (JS) and collapses the middle of a deep trail into a "…" menu when the
+// full trail won't fit, so it stays correct inside any layout.
 // ============================================================================
 @use '../../styles/typography' as type;
 
 .vds-scope {
-  // ---- local chrome tokens (navy bar, light content) ----
-  --vds-scope-bg: var(--vds-midnight-950);
-  --vds-scope-border: var(--vds-midnight-800);
-  --vds-scope-ink: var(--vds-white);
-  --vds-scope-ink-muted: color-mix(in oklab, var(--vds-white) 70%, transparent);
-  --vds-scope-ink-subtle: color-mix(in oklab, var(--vds-white) 45%, transparent);
-  --vds-scope-hover: color-mix(in oklab, var(--vds-white) 6%, transparent);
-  --vds-scope-line: color-mix(in oklab, var(--vds-white) 15%, transparent);
+  // Local translucent overlays, derived from the (near-white, in dark) ink token.
+  // `hover` = subtle (menus, current-row tints); `hover-strong` = the obvious
+  // feedback on the primary interactive rows (breadcrumb nodes + result items).
+  --vds-scope-hover: color-mix(in oklab, var(--vds-ink) 10%, transparent);
+  --vds-scope-hover-strong: color-mix(in oklab, var(--vds-ink) 18%, transparent);
 
-  background-color: var(--vds-scope-bg);
-  border-bottom: 1px solid var(--vds-scope-border);
+  background-color: var(--vds-canvas);
+  border-bottom: 1px solid var(--vds-line);
   padding: var(--vds-space-3) var(--vds-space-4);
   font-family: var(--vds-font-sans);
 
-  &__row {
-    display: flex;
-    flex-direction: column;
-    gap: var(--vds-space-2);
-
-    @media (min-width: 768px) {
-      flex-direction: row;
-      align-items: center;
-      gap: var(--vds-space-3);
-    }
-  }
-
-  &__trail-wrap {
-    display: flex;
-    align-items: center;
-    gap: var(--vds-space-3);
-    flex: 1 1 auto;
-    min-width: 0;
-    white-space: nowrap;
-  }
-
+  // ---- the breadcrumb trail (the bar's only content) ----
   &__trail {
     display: flex;
     align-items: center;
     gap: var(--vds-space-3);
-    flex: 1 1 auto;
     min-width: 0;
-  }
-
-  &__seg-row {
-    display: flex;
-    align-items: center;
-    gap: var(--vds-space-2);
-    min-width: 0;
+    white-space: nowrap;
   }
 
   // ---- separator chevron ----
+  // Color is driven by the Icon's `tone="muted"` (its .vds-icon--muted rule wins
+  // over .vds-icon's currentColor) — a plain `color` here would be overridden by
+  // the Icon base rule, and currentColor inherits the near-black page ink, which
+  // is invisible on the navy bar. This class only owns layout.
   &__sep {
-    color: var(--vds-scope-ink-subtle);
     flex-shrink: 0;
   }
 
-  // ---- breadcrumb segment ----
+  // ---- breadcrumb segment (the direct trail child + the popover's anchor) ----
   &__seg {
     position: relative;
     display: flex;
     align-items: center;
+    min-width: 0;
+    // Root + ancestor segments keep their natural width — if they shrink, the
+    // pill overflows its own box and the next chevron lands on top of the caret
+    // (uneven gap). Only the active segment shrinks, so its label truncates while
+    // every chevron keeps an equal gap on both sides.
+    flex-shrink: 0;
 
     &--active {
-      min-width: 0;
-    }
-    &--inactive {
-      flex-shrink: 0;
+      flex-shrink: 1;
     }
   }
 
@@ -85,11 +70,16 @@
     display: flex;
     align-items: center;
     gap: var(--vds-space-2);
-    min-height: 40px;
+    min-width: 0; // thread shrinkability down to the label
+    // 46px = caret(28) + padding(8·2) + border(1·2). The drill-down caret is the
+    // tallest child, so caret-bearing crumbs render 46px; pin min-height to match
+    // so a caret-less crumb (e.g. the active leaf scope) is the same height — not
+    // the shorter 40px it would otherwise fall back to.
+    min-height: 46px;
     padding: var(--vds-space-2) var(--vds-space-3);
     border-radius: var(--vds-radius-md);
-    border: 1px solid var(--vds-scope-line);
-    color: var(--vds-scope-ink-muted);
+    border: 1px solid var(--vds-line);
+    color: var(--vds-ink-muted);
     @include type.step(body);
     font-weight: 500;
     transition:
@@ -101,15 +91,18 @@
     }
 
     &:not(.vds-scope__crumb--active):hover {
-      background-color: var(--vds-scope-hover);
-      color: var(--vds-scope-ink);
+      background-color: var(--vds-scope-hover-strong);
+      border-color: var(--vds-line-strong);
+      color: var(--vds-ink);
     }
 
-    // Active / current scope = a solid surface pill that pops off the navy.
+    // Active / current scope = a raised surface pill. In light mode that's a white
+    // pill defined by its border + shadow on the near-white bar; in dark it's a
+    // lighter Midnight step lifting off the navy.
     &--active {
       background-color: var(--vds-surface);
       color: var(--vds-ink);
-      border-color: transparent;
+      border-color: var(--vds-line);
       box-shadow: var(--vds-shadow-sm);
       font-weight: 600;
     }
@@ -123,7 +116,7 @@
     display: flex;
     align-items: center;
     gap: var(--vds-space-2);
-    min-width: 0;
+    min-width: 0; // so the label can shrink + ellipsize
     background: none;
     border: 0;
     padding: 0;
@@ -140,16 +133,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 110px;
-    @media (min-width: 640px) {
-      max-width: 180px;
-    }
+    max-width: 180px;
   }
   &__crumb--active &__label {
-    max-width: 140px;
-    @media (min-width: 640px) {
-      max-width: 230px;
-    }
+    max-width: 240px;
   }
 
   // ---- drill-down caret ----
@@ -160,9 +147,9 @@
     width: 28px;
     height: 28px;
     border-radius: 9999px;
-    border: 1px solid var(--vds-scope-line);
+    border: 1px solid var(--vds-line);
     background: transparent;
-    color: var(--vds-scope-ink-subtle);
+    color: var(--vds-ink-subtle);
     cursor: pointer;
     flex-shrink: 0;
     transition:
@@ -172,19 +159,23 @@
 
     &:hover,
     &--open {
-      background-color: var(--vds-surface);
+      background-color: var(--vds-scope-hover);
       border-color: var(--vds-line-strong);
-      color: var(--vds-ink-muted);
-      box-shadow: var(--vds-shadow-sm);
+      color: var(--vds-ink);
     }
   }
-  // On the active (light) pill, the caret border tracks the surface line token.
+  // On the active (lighter) pill the caret reads against that surface.
   &__crumb--active &__caret {
     border-color: var(--vds-line);
     color: var(--vds-ink-subtle);
+
+    &:hover,
+    &--open {
+      background-color: var(--vds-canvas);
+      color: var(--vds-ink-muted);
+    }
   }
 
-  &:focus-visible,
   & button:focus-visible {
     outline: 2px solid var(--vds-focus-ring);
     outline-offset: 2px;
@@ -208,13 +199,6 @@
       width: 28px;
       height: 28px;
     }
-    &--root {
-      background-color: var(--vds-midnight-600);
-    }
-  }
-  // The root chip on the active light pill uses the graphite neutral.
-  &__crumb--active &__chip--root {
-    background-color: var(--vds-graphite-600);
   }
 
   // ---- status dot ----
@@ -234,71 +218,9 @@
     @include type.step(detail);
   }
 
-  // ---- type tag (ellipsis menu) ----
-  &__type-tag {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.0625rem 0.375rem;
-    border-radius: var(--vds-radius-sm);
-    background-color: var(--vds-canvas);
-    color: var(--vds-ink-muted);
-    text-transform: uppercase;
-    @include type.step(nano);
-    flex-shrink: 0;
-  }
-
-  // ---- ⌘K search trigger ----
-  &__search {
-    display: flex;
-    align-items: center;
-    gap: var(--vds-space-2);
-    padding: var(--vds-space-2) var(--vds-space-2) var(--vds-space-2) var(--vds-space-3);
-    background-color: var(--vds-surface);
-    border: 1px solid var(--vds-line);
-    border-radius: var(--vds-radius-md);
-    color: var(--vds-ink-subtle);
-    cursor: pointer;
-    flex-shrink: 0;
-    width: 100%;
-    transition:
-      color var(--vds-dur-fast) var(--vds-ease-out),
-      border-color var(--vds-dur-fast) var(--vds-ease-out);
-
-    @media (min-width: 768px) {
-      width: 200px;
-    }
-
-    &:hover {
-      color: var(--vds-ink-muted);
-      border-color: var(--vds-line-strong);
-    }
-  }
-  &__search-label {
-    @include type.step(caption);
-  }
-  &__kbd {
-    margin-left: auto;
-    padding: 0.125rem 0.375rem;
-    @include type.step(nano);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    color: var(--vds-ink-subtle);
-    background-color: var(--vds-canvas);
-    border: 1px solid var(--vds-line);
-    border-radius: var(--vds-radius-sm);
-    flex-shrink: 0;
-  }
-
-  // ---- actions slot ----
-  &__actions {
-    display: flex;
-    align-items: center;
-    gap: var(--vds-space-2);
-    flex-shrink: 0;
-  }
-
   // ========================================================================
-  // Popover (drill-down) — a real Surface (theme-following), positioned under
-  // its trigger. Anchored left; JS clamps `left` to keep it on-screen.
+  // Popover (drill-down) — a real Surface (dark, via the scoped cascade),
+  // positioned under its trigger. Anchored left; JS clamps `left` on-screen.
   // ========================================================================
   &__pop {
     position: absolute;
@@ -371,7 +293,7 @@
 
     &:hover {
       color: var(--vds-ink-muted);
-      background-color: var(--vds-canvas);
+      background-color: var(--vds-scope-hover);
     }
     &--active {
       color: var(--vds-primary);
@@ -404,10 +326,10 @@
     transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
 
     &:hover {
-      background-color: var(--vds-canvas);
+      background-color: var(--vds-scope-hover);
     }
     &--active {
-      background-color: var(--vds-canvas);
+      background-color: var(--vds-scope-hover);
       color: var(--vds-ink);
       font-weight: 500;
     }
@@ -418,11 +340,15 @@
   }
 
   // ---- results list ----
+  // Mirrors the Select listbox: a padded menu of rounded, inset rows; the current
+  // scope reads like Select's selected option (primary-soft fill + primary text +
+  // a check affix) rather than a separate "Current" tag.
   &__results {
     position: relative;
     max-height: 352px;
     overflow-y: auto;
     overscroll-behavior: contain;
+    padding: var(--vds-space-1);
   }
   &__empty {
     padding: var(--vds-space-4) var(--vds-space-3);
@@ -437,18 +363,22 @@
     gap: var(--vds-space-3);
     width: 100%;
     text-align: left;
-    padding: var(--vds-space-3);
+    padding: var(--vds-space-2);
     border: 0;
+    border-radius: var(--vds-radius-sm);
     background: transparent;
     color: var(--vds-ink);
     cursor: pointer;
-    transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
+    transition:
+      background-color var(--vds-dur-fast) var(--vds-ease-out),
+      color var(--vds-dur-fast) var(--vds-ease-out);
 
     &:hover {
-      background-color: var(--vds-canvas);
+      background-color: var(--vds-scope-hover);
     }
     &--current {
-      background-color: var(--vds-canvas);
+      background-color: var(--vds-primary-soft);
+      color: var(--vds-primary);
       cursor: default;
     }
   }
@@ -470,14 +400,14 @@
     @include type.step(detail);
     color: var(--vds-ink-subtle);
   }
-  &__current-tag {
+  // The current row's name turns primary (it inherits __item's color); keep the
+  // child-count sub muted so only the name carries the accent.
+  &__item--current &__item-name {
+    color: var(--vds-primary);
+  }
+  &__item-check {
     flex-shrink: 0;
-    padding: 0.0625rem 0.375rem;
-    border-radius: var(--vds-radius-sm);
-    background-color: var(--vds-line);
-    color: var(--vds-ink-muted);
-    text-transform: uppercase;
-    @include type.step(nano);
+    color: var(--vds-primary);
   }
 
   // ========================================================================
@@ -488,6 +418,7 @@
     display: flex;
     align-items: center;
     gap: var(--vds-space-3);
+    flex-shrink: 0;
   }
   &__ellipsis {
     display: inline-flex;
@@ -497,14 +428,14 @@
     border: 0;
     border-radius: var(--vds-radius-md);
     background: transparent;
-    color: var(--vds-scope-ink-muted);
+    color: var(--vds-ink-muted);
     cursor: pointer;
     transition:
       color var(--vds-dur-fast) var(--vds-ease-out),
       background-color var(--vds-dur-fast) var(--vds-ease-out);
 
     &:hover {
-      color: var(--vds-scope-ink);
+      color: var(--vds-ink);
       background-color: var(--vds-scope-hover);
     }
   }
@@ -524,6 +455,7 @@
   &__ellipsis-list {
     max-height: 280px;
     overflow-y: auto;
+    padding: var(--vds-space-1);
   }
   &__ellipsis-item {
     display: flex;
@@ -531,15 +463,16 @@
     gap: var(--vds-space-2);
     width: 100%;
     text-align: left;
-    padding: var(--vds-space-3);
+    padding: var(--vds-space-2);
     border: 0;
+    border-radius: var(--vds-radius-sm);
     background: transparent;
     color: var(--vds-ink);
     cursor: pointer;
     transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
 
     &:hover {
-      background-color: var(--vds-canvas);
+      background-color: var(--vds-scope-hover);
     }
   }
   &__ellipsis-label {
@@ -549,6 +482,25 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+// ============================================================================
+// Dark-mode-only refinements. The base styles above already render correctly on
+// navy via the flipping tokens; these only fix two things specific to the dark
+// surface:
+//   1. The drill-down popovers read too BRIGHT at the overlay step (midnight-700)
+//      sitting on the near-black bar — drop them one step to the raised tone
+//      (midnight-800). Remapping the token cascades to the real <Surface> + the
+//      sort/filter menu. (Light mode keeps white overlays — no change needed.)
+//   2. That darker popover bg now equals --vds-line, so step the dividers/outline
+//      up one notch inside the popovers to keep them visible.
+// ============================================================================
+.dark .vds-scope {
+  --vds-surface-overlay: var(--vds-surface-raised);
+}
+.dark .vds-scope__pop,
+.dark .vds-scope__ellipsis-pop {
+  --vds-line: var(--vds-line-strong);
 }
 
 @keyframes vds-scope-teleport {

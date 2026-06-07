@@ -45,7 +45,8 @@ function resolveDelta(delta, invert) {
  * - label:       the metric name
  * - caption:     small secondary line (e.g. "of 1,400 total")
  * - icon:        optional leading icon component
- * - iconVariant: 'outline' (ringed, transparent — default) | 'soft' (filled chip)
+ * - iconVariant: 'soft' (filled tinted circle — default, the metrics-family
+ *                standard) | 'outline' (ringed, transparent)
  * - tone:        'default' | 'primary' | 'success' | 'warning' | 'danger', or a
  *                chromatic family for a categorical (no good/bad) accent:
  *                'azure'|'harbor'|'emerald'|'amber'|'rose'|'orchid'|'clay'.
@@ -59,7 +60,8 @@ function resolveDelta(delta, invert) {
  *                good/bad meaning — any Sparkline tone, incl. chromatic families
  *                ('azure'|'harbor'|'emerald'|'amber'|'rose'|'orchid'|'clay').
  * - loading:     show a skeleton    (default false)
- * - onClick:     makes the tile a button
+ * - onClick:     makes the tile a button (drill-in) with hover lift + focus ring
+ * - interactive: force the interactive hover/focus affordance without onClick
  *
  * @example
  * <StatTile icon={Shield} value={1192} label="Protected" tone="success"
@@ -75,7 +77,7 @@ export const StatTile = forwardRef(function StatTile(
     label,
     caption,
     icon,
-    iconVariant = 'outline',
+    iconVariant = 'soft',
     tone = 'default',
     size = 'md',
     layout = 'row',
@@ -85,12 +87,13 @@ export const StatTile = forwardRef(function StatTile(
     trendTone,
     loading = false,
     onClick,
+    interactive = false,
     className,
     ...props
   },
   ref,
 ) {
-  const interactive = typeof onClick === 'function'
+  const isInteractive = interactive || typeof onClick === 'function'
   const d = resolveDelta(delta, invertDelta)
   const formatted = formatValue(value, prefix, suffix)
   const hasTrend = !loading && Array.isArray(trend) && trend.length >= 2
@@ -131,20 +134,19 @@ export const StatTile = forwardRef(function StatTile(
   return (
     <Surface
       ref={ref}
-      as={interactive ? 'button' : 'div'}
-      type={interactive ? 'button' : undefined}
+      as={isInteractive ? 'button' : 'div'}
+      type={isInteractive ? 'button' : undefined}
       onClick={onClick}
       aria-busy={loading || undefined}
       padding={size === 'lg' ? 5 : 4}
-      elevation="sm"
-      bordered={false}
+      elevation="resting"
       className={cx(
         'vds-stat',
         `vds-stat--${layout}`,
         `vds-stat--size-${size}`,
         `vds-stat--icon-${iconVariant}`,
         `vds-stat--${tone}`,
-        interactive && 'vds-stat--interactive',
+        isInteractive && 'vds-stat--interactive',
         className,
       )}
       {...props}

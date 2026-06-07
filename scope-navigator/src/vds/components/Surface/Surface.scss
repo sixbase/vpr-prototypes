@@ -34,7 +34,9 @@ $pad-steps: (0, 1, 2, 3, 4, 5, 6, 8);
   // Light mode is shadow-led (surfaces barely change); dark mode is lightness-led
   // (surface tokens step lighter as they rise — the var() handles that per theme).
   &--elev-flat     { background-color: var(--vds-canvas);         box-shadow: none; }
-  &--elev-resting  { background-color: var(--vds-surface);        box-shadow: none; }
+  // Resting carries a whisper shadow-xs — tone + line still do the work, the xs
+  // just adds a hair of lift so data tiles feel placed, not painted on.
+  &--elev-resting  { background-color: var(--vds-surface);        box-shadow: var(--vds-shadow-xs); }
   &--elev-raised   { background-color: var(--vds-surface-raised); box-shadow: var(--vds-shadow-md); }
   &--elev-overlay  { background-color: var(--vds-surface-overlay); box-shadow: var(--vds-shadow-lg); }
   &--elev-floating { background-color: var(--vds-surface-raised); box-shadow: var(--vds-shadow-lg); }

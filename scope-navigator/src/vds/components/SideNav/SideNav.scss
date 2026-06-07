@@ -1,0 +1,278 @@
+// ============================================================================
+// SideNav — the product navigation rail. A data-driven vertical nav: a brand
+// header, collapsible product groups (each with items, an optional "full portal"
+// escape link, and a locked / no-entitlement state), an account-admin footer
+// cluster, and an arbitrary footer slot.
+//
+// THEME-FOLLOWING: built from plain SEMANTIC tokens (--vds-canvas / surface /
+// ink / line / primary), so it renders LIGHT in light mode and switches to the
+// product navy under a `.dark` ancestor — pass className="dark" to force the
+// dark rail anywhere (the chrome usually stays dark regardless of page theme).
+// Translucent hover fills are color-mix on --vds-ink so they flip for free.
+// ============================================================================
+@use '../../styles/typography' as type;
+
+.vds-sidenav {
+  // Rail width — overridable per consumer via the custom property.
+  --vds-sidenav-w: 14rem;
+  // Interaction-state fills — the curated neutral ramp stops (graphite light /
+  // midnight dark), exposed as local knobs so a consumer can still override one
+  // rail. The selected row reads as a clean chip from the rail's own color
+  // family; full-strength ink + weight (below) carry the emphasis.
+  --vds-sidenav-hover: var(--vds-surface-hover);
+  --vds-sidenav-active: var(--vds-surface-selected);
+  --vds-sidenav-active-hover: var(--vds-surface-selected-hover);
+  // Custom scrollbar thumb — a ramp off the rail's own ink (graphite light /
+  // midnight dark), so it sits a few steps up the SAME color family as the rail
+  // and flips with the theme for free. Track stays transparent (canvas shows).
+  --vds-sidenav-scroll-thumb: color-mix(in oklab, var(--vds-ink) 20%, transparent);
+  --vds-sidenav-scroll-thumb-hover: color-mix(in oklab, var(--vds-ink) 36%, transparent);
+
+  display: flex;
+  flex-direction: column;
+  width: var(--vds-sidenav-w);
+  flex-shrink: 0;
+  height: 100%;
+  min-height: 0;
+  background-color: var(--vds-canvas);
+  border-right: 1px solid var(--vds-line);
+  font-family: var(--vds-font-sans);
+  color: var(--vds-ink-muted);
+
+  // ---- brand header ----
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vds-space-2);
+    flex-shrink: 0;
+    padding: var(--vds-space-4) var(--vds-space-4) var(--vds-space-3);
+    color: var(--vds-ink);
+  }
+
+  // ---- scrollable group area ----
+  &__scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--vds-space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--vds-space-2);
+
+    // ---- custom 4px scrollbar, scoped to the rail ----
+    // Firefox / standard: `thin` is the narrowest the spec exposes (~no exact px).
+    scrollbar-width: thin;
+    scrollbar-color: var(--vds-sidenav-scroll-thumb) transparent;
+
+    // Webkit/Blink (Chrome, Edge, Safari, Arc): exact 4px, rounded thumb.
+    &::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--vds-sidenav-scroll-thumb);
+      border-radius: 9999px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--vds-sidenav-scroll-thumb-hover);
+    }
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  // ---- section label (variant:'section') ----
+  &__section-label {
+    @include type.step(eyebrow);
+    text-transform: uppercase;
+    color: var(--vds-ink-subtle);
+    padding: var(--vds-space-2) var(--vds-space-2) var(--vds-space-1);
+  }
+
+  // ---- product group header ----
+  &__group-header {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-2);
+    width: 100%;
+    text-align: left;
+    padding: var(--vds-space-2);
+    border: 0;
+    border-radius: var(--vds-radius-md);
+    background: transparent;
+    color: var(--vds-ink);
+    @include type.step(caption);
+    font-weight: 600;
+    transition:
+      background-color var(--vds-dur-fast) var(--vds-ease-out),
+      color var(--vds-dur-fast) var(--vds-ease-out);
+  }
+  button#{&}__group-header {
+    cursor: pointer;
+    &:hover {
+      background-color: var(--vds-sidenav-hover);
+    }
+  }
+  &__group-icon {
+    flex-shrink: 0;
+    color: var(--vds-ink-subtle);
+  }
+  &__group-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  &__group-caret {
+    flex-shrink: 0;
+    color: var(--vds-ink-subtle);
+    transition: transform var(--vds-dur-fast) var(--vds-ease-out);
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+  &__group-lock {
+    flex-shrink: 0;
+    color: var(--vds-ink-subtle);
+  }
+
+  // Locked product: dim the header to read as "not entitled".
+  &__group--locked &__group-header {
+    color: var(--vds-ink-subtle);
+    cursor: default;
+  }
+
+  // ---- items ----
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-2);
+    width: 100%;
+    text-align: left;
+    // a touch of left inset so items read as children of their group header
+    padding: var(--vds-space-2) var(--vds-space-2) var(--vds-space-2) var(--vds-space-3);
+    border: 0;
+    border-radius: var(--vds-radius-md);
+    background: transparent;
+    color: var(--vds-ink-muted);
+    @include type.step(body);
+    cursor: pointer;
+    transition:
+      background-color var(--vds-dur-fast) var(--vds-ease-out),
+      color var(--vds-dur-fast) var(--vds-ease-out);
+
+    &:hover {
+      background-color: var(--vds-sidenav-hover);
+      color: var(--vds-ink);
+    }
+
+    // Active = a neutral chip from the rail's own ink ramp; full ink + weight
+    // carry the emphasis, so it stays in one color family with the rail.
+    &--active {
+      background-color: var(--vds-sidenav-active);
+      color: var(--vds-ink);
+      font-weight: 600;
+    }
+    // Keep the selected fill (and deepen it) on hover, instead of dropping back
+    // to the lighter unselected-hover tint.
+    &--active:hover {
+      background-color: var(--vds-sidenav-active-hover);
+      color: var(--vds-ink);
+    }
+
+    &--locked {
+      color: var(--vds-ink-subtle);
+      cursor: default;
+      &:hover {
+        background-color: transparent;
+        color: var(--vds-ink-subtle);
+      }
+    }
+  }
+  &__item-icon {
+    flex-shrink: 0;
+  }
+  &__item-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  &__item-lock {
+    flex-shrink: 0;
+    color: var(--vds-ink-subtle);
+  }
+  &__item-badge {
+    flex-shrink: 0;
+    @include type.step(detail);
+    font-weight: 600;
+    color: var(--vds-ink-subtle);
+    background-color: var(--vds-sidenav-hover);
+    padding: 0 var(--vds-space-2);
+    border-radius: 9999px;
+  }
+
+  // ---- "full portal" escape link — the clear door out of the curated set ----
+  &__escape {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-2);
+    width: 100%;
+    text-align: left;
+    padding: var(--vds-space-1) var(--vds-space-2) var(--vds-space-1) var(--vds-space-3);
+    margin-top: 0.125rem;
+    border: 0;
+    border-radius: var(--vds-radius-md);
+    background: transparent;
+    color: var(--vds-ink-subtle);
+    @include type.step(detail);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      color var(--vds-dur-fast) var(--vds-ease-out),
+      background-color var(--vds-dur-fast) var(--vds-ease-out);
+
+    &:hover {
+      color: var(--vds-primary);
+      background-color: var(--vds-sidenav-hover);
+    }
+  }
+  &__escape-icon {
+    flex-shrink: 0;
+  }
+
+  // ---- footer (account cluster + arbitrary slot) ----
+  &__footer {
+    flex-shrink: 0;
+    border-top: 1px solid var(--vds-line);
+    padding: var(--vds-space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--vds-space-1);
+  }
+  &__footer-slot {
+    padding-top: var(--vds-space-1);
+  }
+
+  // ---- focus ----
+  & button:focus-visible {
+    outline: 2px solid var(--vds-focus-ring);
+    outline-offset: 2px;
+  }
+}

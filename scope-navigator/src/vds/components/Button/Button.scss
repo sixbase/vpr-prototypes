@@ -35,6 +35,14 @@
   &--md { height: 2.25rem; padding: 0 1rem;    @include type.step(body); }
   &--lg { height: 2.75rem; padding: 0 1.5rem;  @include type.step(body-lg); }
 
+  // ---- icon-only ----
+  // Drop the text padding and square the button to its size's height, so a lone
+  // icon sits centered in a tap target that matches the height of text buttons.
+  &--icon {
+    padding: 0;
+    aspect-ratio: 1;
+  }
+
   // ---- variants ----
   &--primary {
     background-color: var(--vds-primary);
