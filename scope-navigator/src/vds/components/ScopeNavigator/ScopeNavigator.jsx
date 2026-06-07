@@ -1,4 +1,5 @@
 import {
+  Fragment,
   forwardRef,
   useEffect,
   useLayoutEffect,
@@ -16,6 +17,7 @@ import {
   ArrowUpDown,
   Filter,
   X,
+  Check,
   MoreHorizontal,
 } from 'lucide-react'
 import { cx } from '../../lib/cx.js'
@@ -109,12 +111,13 @@ function getDropdownHeader(items, mode, typeConfig) {
   return mode === 'drill' ? `${verb} ${label}S` : `${verb} ${label}`
 }
 
-/* A filled, family-tinted square holding an entity-type (or root) icon. */
-function TypeChip({ tone, icon, isRoot, size = 'sm' }) {
+/* A filled, family-tinted square holding an entity-type (or root) icon. The root
+   has no `tone`, so it falls back to the chip's default navy (midnight-600). */
+function TypeChip({ tone, icon, size = 'sm' }) {
   const tint = tone ? `var(--vds-${tone}-600)` : undefined
   return (
     <span
-      className={cx('vds-scope__chip', `vds-scope__chip--${size}`, isRoot && 'vds-scope__chip--root')}
+      className={cx('vds-scope__chip', `vds-scope__chip--${size}`)}
       style={tint ? { '--vds-scope-chip-bg': tint } : undefined}
       aria-hidden="true"
     >
@@ -141,13 +144,6 @@ function StatusDot({ status, statusConfig, showLabel = false }) {
       {cfg.label}
     </span>
   )
-}
-
-/* A small uppercase type tag used in the ellipsis menu. */
-function TypeTag({ type, typeConfig }) {
-  const cfg = typeConfig[type]
-  if (!cfg) return null
-  return <span className="vds-scope__type-tag">{cfg.label}</span>
 }
 
 /* A toolbar dropdown (Sort / Filter) inside the segment popover. */
@@ -203,7 +199,7 @@ function DropdownPopover({
   // deep/right-side trigger would push a viewport-wide panel off the edge. We
   // measure after layout and shift its actual `left` (not a transform) so the
   // layout box itself stays in view — otherwise the off-screen box widens the
-  // scroll area and auto-focusing the search input scrolls the page sideways.
+  // scroll area.
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
@@ -221,11 +217,9 @@ function DropdownPopover({
     return () => window.removeEventListener('resize', clamp)
   }, [])
 
-  // preventScroll: belt-and-suspenders so focusing never nudges the page even
-  // if the panel still slightly overruns.
-  useEffect(() => {
-    inputRef.current?.focus({ preventScroll: true })
-  }, [])
+  // Note: the search input is intentionally NOT auto-focused on open — clicking a
+  // node should just reveal the list, not put the cursor in the search field. The
+  // user can click/tab into search when they want to filter.
 
   const statusKeys = Object.keys(statusConfig)
   let displayed = items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()))
@@ -341,8 +335,8 @@ function DropdownPopover({
                     <span className="vds-scope__item-sub">{item.children.length} children</span>
                   )}
                 </span>
-                {isCurrent && <span className="vds-scope__current-tag">Current</span>}
                 <StatusDot status={item.status} statusConfig={statusConfig} />
+                {isCurrent && <Icon as={Check} size="sm" className="vds-scope__item-check" />}
               </button>
             )
           })
@@ -359,7 +353,6 @@ function EllipsisMenu({ hiddenSegments, typeConfig }) {
 
   return (
     <div ref={ref} className="vds-scope__ellipsis-wrap">
-      <Icon as={ChevronRight} size="sm" className="vds-scope__sep" />
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -385,7 +378,6 @@ function EllipsisMenu({ hiddenSegments, typeConfig }) {
                 >
                   <TypeChip tone={cfg?.tone} icon={cfg?.icon} size="sm" />
                   <span className="vds-scope__ellipsis-label">{seg.label}</span>
-                  <TypeTag type={seg.entityType} typeConfig={typeConfig} />
                 </button>
               )
             })}
@@ -422,7 +414,7 @@ function BreadcrumbSegment({
   const hasDropdown = dropdownItems?.length > 0
 
   return (
-    <div className={cx('vds-scope__seg', isActive ? 'vds-scope__seg--active' : 'vds-scope__seg--inactive')}>
+    <div className={cx('vds-scope__seg', isActive && 'vds-scope__seg--active')}>
       <div
         className={cx(
           'vds-scope__crumb',
@@ -436,7 +428,7 @@ function BreadcrumbSegment({
           onClick={isActive && !isRoot ? undefined : onClick}
           className={cx('vds-scope__crumb-main', !(isActive && !isRoot) && 'vds-scope__crumb-main--clickable')}
         >
-          <TypeChip tone={tone} icon={icon} isRoot={isRoot} size="sm" />
+          <TypeChip tone={tone} icon={icon} size="sm" />
           <span className="vds-scope__label">{label}</span>
         </button>
         {hasDropdown && (
@@ -472,19 +464,6 @@ function BreadcrumbSegment({
   )
 }
 
-/* The ⌘K search affordance shown at the end of the bar. */
-function SearchTrigger({ onClick, label }) {
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
-  const shortcut = isMac ? '⌘K' : 'Ctrl+K'
-  return (
-    <button type="button" onClick={onClick} className="vds-scope__search">
-      <Icon as={Search} size="sm" />
-      <span className="vds-scope__search-label">{label}</span>
-      <kbd className="vds-scope__kbd">{shortcut}</kbd>
-    </button>
-  )
-}
-
 /**
  * ScopeNavigator
  *
@@ -497,8 +476,11 @@ function SearchTrigger({ onClick, label }) {
  * Data-driven: pass `path` (root→current entities) and an `onNavigate` callback;
  * the bar renders from `typeConfig` / `statusConfig` (Vipre defaults baked in,
  * fully overridable). Each entity is `{ id, name, type, status, children? }`.
- * Composes Surface + Input + Icon. The bar itself is always the product navy
- * (a fixed chrome surface) regardless of light/dark; its popovers follow theme.
+ * Composes Surface + Input + Icon. The bar follows the ambient theme: a light bar
+ * in light mode, the product navy (light-on-dark) under a `.dark` ancestor — so
+ * place it inside `.dark` wherever the chrome should stay dark. It is purely the
+ * scope trail: search (the ⌘K palette) and product toggles (e.g. "Future State")
+ * are separate components the app composes alongside it, not part of this bar.
  *
  * Props:
  * - path:          entity[] from the root's child down to the current scope ([] = root)
@@ -509,9 +491,6 @@ function SearchTrigger({ onClick, label }) {
  * - typeConfig:    type → { label, icon, tone }         (default Vipre taxonomy)
  * - statusConfig:  status → { label, tone, description } (default active/trial/suspended)
  * - sortOptions:   dropdown sort options                (default defaultSortOptions)
- * - onSearch:      () => void — when given, renders the ⌘K search trigger
- * - searchLabel:   placeholder text on the search trigger (default 'Search entities...')
- * - actions:       node slot rendered between the trail and the search trigger
  * - teleportedSegments: Set<id> — segments to flash-highlight (e.g. after a jump)
  *
  * @example
@@ -519,7 +498,6 @@ function SearchTrigger({ onClick, label }) {
  *   path={path}
  *   onNavigate={setPath}
  *   rootItems={topLevelAccounts}
- *   onSearch={() => setPaletteOpen(true)}
  * />
  */
 export const ScopeNavigator = forwardRef(function ScopeNavigator(
@@ -532,9 +510,6 @@ export const ScopeNavigator = forwardRef(function ScopeNavigator(
     typeConfig = defaultTypeConfig,
     statusConfig = defaultStatusConfig,
     sortOptions = defaultSortOptions,
-    onSearch,
-    searchLabel = 'Search entities...',
-    actions,
     teleportedSegments,
     className,
     ...props
@@ -602,7 +577,14 @@ export const ScopeNavigator = forwardRef(function ScopeNavigator(
     check()
     const ro = new ResizeObserver(check)
     ro.observe(nav)
-    return () => ro.disconnect()
+    // Window-resize fallback: belt-and-suspenders for environments that throttle
+    // ResizeObserver delivery, and to catch viewport changes that don't resize
+    // the element's box on the same tick.
+    window.addEventListener('resize', check)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', check)
+    }
   }, [])
 
   const n = allSegments.length
@@ -610,7 +592,7 @@ export const ScopeNavigator = forwardRef(function ScopeNavigator(
   const LABEL_CAP = 180
   const GAP = 28 // chevron + gaps between segments
   const ELL = 44 // the "…" chip
-  const reserved = w >= 768 ? 400 : 56 // actions (+ inline search) only share the row at md+
+  const reserved = 32 // the nav's own horizontal padding; the trail owns the rest
   const avail = w - reserved
   const segW = (seg) => {
     const len = seg.isRoot ? 12 : (seg.label || '').length
@@ -635,21 +617,39 @@ export const ScopeNavigator = forwardRef(function ScopeNavigator(
   }
 
   return (
-    <nav ref={mergeRefs(ref, navRef)} className={cx('vds-scope', className)} {...props}>
-      <div className="vds-scope__row">
-        <div className="vds-scope__trail-wrap">
-          <div className="vds-scope__trail">
-            {visibleSegments.map((seg, i) => {
+    <nav
+      ref={mergeRefs(ref, navRef)}
+      className={cx('vds-scope', className)}
+      {...props}
+    >
+      <div className="vds-scope__trail">
+        {visibleSegments.map((seg, i) => {
+              // One chevron separator before every item (except the first), as a
+              // direct trail child — so the gap is uniform on BOTH sides of every
+              // segment AND the "…" menu (… reads as a real level: A › … › B).
+              const sep =
+                i > 0 ? (
+                  <Icon
+                    key={`sep-${i}`}
+                    as={ChevronRight}
+                    size="sm"
+                    tone="muted"
+                    className="vds-scope__sep"
+                  />
+                ) : null
+
               if (seg === 'ellipsis') {
-                return <EllipsisMenu key="ellipsis" hiddenSegments={ellipsisSegments} typeConfig={typeConfig} />
+                return (
+                  <Fragment key="ellipsis">
+                    {sep}
+                    <EllipsisMenu hiddenSegments={ellipsisSegments} typeConfig={typeConfig} />
+                  </Fragment>
+                )
               }
               const { id, ...segProps } = seg
-              const prev = visibleSegments[i - 1]
               return (
-                <div key={id} className="vds-scope__seg-row">
-                  {i > 0 && prev !== 'ellipsis' && (
-                    <Icon as={ChevronRight} size="sm" className="vds-scope__sep" />
-                  )}
+                <Fragment key={id}>
+                  {sep}
                   <BreadcrumbSegment
                     {...segProps}
                     rootIcon={rootIcon}
@@ -660,13 +660,9 @@ export const ScopeNavigator = forwardRef(function ScopeNavigator(
                     typeOrder={typeOrder}
                     statusOrder={statusOrder}
                   />
-                </div>
+                </Fragment>
               )
             })}
-          </div>
-          {actions && <div className="vds-scope__actions">{actions}</div>}
-        </div>
-        {onSearch && <SearchTrigger onClick={onSearch} label={searchLabel} />}
       </div>
     </nav>
   )

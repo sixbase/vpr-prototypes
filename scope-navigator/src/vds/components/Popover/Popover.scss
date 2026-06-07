@@ -1,0 +1,124 @@
+// ============================================================================
+// Popover — the anchored-overlay primitive. The wrapper is the positioning
+// context; the panel is an absolutely-positioned Surface whose top/left are
+// set inline by the JS placement logic (flip + clamp). Styles here own the
+// chrome JS shouldn't (layering, scroll, the open animation) plus the canonical
+// menu/item look every dropdown shares — see `__menu` / `__item` below.
+// ============================================================================
+@use '../../styles/typography' as type;
+
+.vds-popover {
+  position: relative;
+  display: inline-flex;
+}
+
+.vds-popover__panel {
+  // Tracks the panel's own foreground, so it stays a subtle light overlay on
+  // the dark drill-down surface and a dark one on light menus — no theme fork.
+  --vds-popover-item-hover: color-mix(in oklab, var(--vds-ink) 7%, transparent);
+
+  z-index: var(--vds-z-dropdown);
+  overflow: auto;
+  overscroll-behavior: contain;
+  white-space: normal;
+  animation: vds-popover-in var(--vds-dur-fast) var(--vds-ease-out);
+
+  // Baseline interactive-item affordance: any consumer rendering a menu or
+  // listbox gets a hover highlight for free, scoped to the ARIA item roles so
+  // non-interactive panel content is untouched. Consumers may still style
+  // their own items — this is the floor, not an override.
+  [role='menuitem'],
+  [role='menuitemradio'],
+  [role='menuitemcheckbox'],
+  [role='option'] {
+    cursor: pointer;
+    transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
+
+    &:hover {
+      background-color: var(--vds-popover-item-hover);
+    }
+  }
+}
+
+// Flipped-up panels grow from their bottom edge.
+.vds-popover__panel--up {
+  transform-origin: bottom center;
+}
+
+// ============================================================================
+// Canonical menu — the shared dropdown list look. Select, TimeframeSelect, and
+// any ad-hoc Popover menu render `__menu` (the list) + `__item` (the rows) so
+// every dropdown in the system has one padding, hover, focus-ring, and
+// active-fill treatment instead of each re-styling its own options.
+// ============================================================================
+.vds-popover__menu {
+  display: flex;
+  flex-direction: column;
+  padding: var(--vds-space-1);
+}
+
+.vds-popover__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vds-space-3);
+  width: 100%;
+  padding: var(--vds-space-2);
+  border: 0;
+  border-radius: var(--vds-radius-sm);
+  background: transparent;
+  color: var(--vds-ink);
+  font-family: var(--vds-font-sans);
+  @include type.step(body);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
+
+  &:hover {
+    background-color: var(--vds-popover-item-hover);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--vds-focus-ring) 45%, transparent);
+  }
+
+  // Selected row — primary tint + fill (Select / TimeframeSelect mark the
+  // current value this way; the check affix sits in `__item-check`).
+  &--active {
+    color: var(--vds-primary);
+    font-weight: 500;
+    background-color: var(--vds-primary-soft);
+  }
+  &[disabled],
+  &[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  &-check {
+    color: var(--vds-primary);
+    flex-shrink: 0;
+  }
+}
+
+@keyframes vds-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vds-popover__panel {
+    animation: none;
+  }
+}

@@ -15,6 +15,10 @@
 }
 
 .vds-table {
+  // Fill the container by default, so the table shrinks/grows with its parent
+  // (resize the window and it follows) and falls back to natural width only when
+  // a parent is shrink-to-fit. This is the responsive baseline.
+  width: 100%;
   overflow: hidden;          // clip the cells' square corners to the table radius
   font-family: var(--vds-font-sans);
 
@@ -23,6 +27,8 @@
   --vds-table-pad-x: 0.875rem;
 
   // ---- scroll body — horizontal overflow never breaks the page layout ----
+  // Responsive baseline: when a `minWidth` table is wider than its shell, the
+  // body scrolls horizontally rather than crushing columns into illegibility.
   &__scroll {
     width: 100%;
     overflow-x: auto;

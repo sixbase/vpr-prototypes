@@ -1,25 +1,27 @@
 // ============================================================================
-// Select — native <select> with Input's neutral-graphite chrome + a chevron.
+// Select — a single-choice dropdown. The trigger wears Input's neutral-graphite
+// chrome (so it reads as a form control); the open list is the same Popover
+// menu TimeframeSelect uses, so options share one look across the system.
 // ============================================================================
 @use '../../styles/typography' as type;
 
 .vds-select {
   --vds-input-border: var(--vds-graphite-300);
-  --vds-input-border-focus: var(--vds-focus-ring);
-  --vds-input-ring: color-mix(in oklab, var(--vds-focus-ring) 35%, transparent);
   --vds-input-muted: var(--vds-graphite-500);
   --vds-input-fill: var(--vds-white); // light = white; dark recessed below
 
-  position: relative;
   display: inline-flex;
-  align-items: center;
   width: 100%;
 
-  &__field {
-    appearance: none;
-    -webkit-appearance: none;
+  // ====================================================================
+  // Trigger (the closed control)
+  // ====================================================================
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--vds-space-2);
     width: 100%;
-    height: 100%;
     margin: 0;
     border: 1px solid var(--vds-input-border);
     border-radius: var(--vds-radius-sm);
@@ -33,39 +35,40 @@
 
     &:focus-visible {
       outline: none;
-      border-color: var(--vds-input-border-focus);
-      box-shadow: 0 0 0 2px var(--vds-input-ring);
+      border-color: var(--vds-focus-ring);
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--vds-focus-ring) 35%, transparent);
+    }
+    &[aria-expanded='true'] { border-color: var(--vds-focus-ring); }
+  }
+
+  &__value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  &--placeholder .vds-select__value { color: var(--vds-input-muted); }
+  &__caret { color: var(--vds-input-muted); flex-shrink: 0; }
+
+  // ---- sizes (match Input / native Select) ----
+  &--sm { &.vds-select__trigger { height: 2rem;    @include type.step(detail);  padding: 0 0.5rem  0 0.625rem; } }
+  &--md { &.vds-select__trigger { height: 2.25rem; @include type.step(body);    padding: 0 0.625rem 0 0.75rem; } }
+  &--lg { &.vds-select__trigger { height: 2.75rem; @include type.step(body-lg); padding: 0 0.75rem  0 1rem; } }
+
+  &--invalid {
+    &.vds-select__trigger {
+      border-color: var(--vds-danger);
+      &:focus-visible { border-color: var(--vds-danger); box-shadow: 0 0 0 2px color-mix(in oklab, var(--vds-danger) 30%, transparent); }
     }
   }
 
-  &__chevron {
-    position: absolute;
-    right: 0.625rem;
-    display: inline-flex;
-    color: var(--vds-input-muted);
-    pointer-events: none;
-  }
-
-  // ---- sizes (match Input) ----
-  &--sm { height: 2rem;    .vds-select__field { @include type.step(detail);  padding: 0 2rem 0 0.625rem; } }
-  &--md { height: 2.25rem; .vds-select__field { @include type.step(body);    padding: 0 2.25rem 0 0.75rem; } }
-  &--lg { height: 2.75rem; .vds-select__field { @include type.step(body-lg); padding: 0 2.5rem 0 1rem; } }
-
-  &--invalid .vds-select__field {
-    border-color: var(--vds-danger);
-    &:focus-visible { border-color: var(--vds-danger); box-shadow: 0 0 0 2px color-mix(in oklab, var(--vds-danger) 30%, transparent); }
-  }
-
-  &--disabled {
-    opacity: 0.5;
-    pointer-events: none;
-  }
+  &--disabled { opacity: 0.5; pointer-events: none; }
 }
+
+// The open list reuses the canonical Popover menu (`vds-popover__menu` /
+// `__item`) — see Popover.scss. Select only owns the trigger chrome above.
 
 .dark .vds-select {
   --vds-input-border: var(--vds-graphite-700);
-  --vds-input-border-focus: var(--vds-focus-ring);
-  --vds-input-ring: color-mix(in oklab, var(--vds-focus-ring) 40%, transparent);
   --vds-input-muted: var(--vds-graphite-400);
   --vds-input-fill: var(--vds-midnight-950);
 }

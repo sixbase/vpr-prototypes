@@ -4,12 +4,16 @@
 // Two layouts: stacked (default, number is the hero) and row (compact).
 // ============================================================================
 @use '../../styles/typography' as type;
+@use '../../styles/mixins' as mix;
 
 .vds-stat {
   width: 100%;
   min-width: 0; // shrink-safe inside a grid/flex cell (no overflow)
   text-align: left;
   font-family: var(--vds-font-sans);
+
+  // Corner = Surface's default radius-lg (12px) — the shared metrics-family
+  // value (StatTile + MetricCard match). No component-scoped override.
 
   // tone → accent (icon glyph) + soft (filled-chip bg). Set per tone below.
   --vds-stat-accent: var(--vds-ink-muted);
@@ -132,22 +136,8 @@
     .vds-stat__icon { width: 3.25rem; height: 3.25rem; }
   }
 
-  // ---- interactive (drill-in) ----
-  &--interactive {
-    cursor: pointer;
-    transition:
-      border-color var(--vds-dur-fast) var(--vds-ease-out),
-      background-color var(--vds-dur-fast) var(--vds-ease-out);
-
-    &:hover {
-      border-color: var(--vds-line-strong);
-      background-color: var(--vds-canvas);
-    }
-    &:focus-visible {
-      outline: 2px solid var(--vds-focus-ring);
-      outline-offset: 2px;
-    }
-  }
+  // ---- interactive (drill-in) — shared metrics-family recipe ----
+  &--interactive { @include mix.interactive-card; }
 
   // ---- tones (color ONLY the icon glyph + soft chip; the value stays ink) ----
   &--primary {

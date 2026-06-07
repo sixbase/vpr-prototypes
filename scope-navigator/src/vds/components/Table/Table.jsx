@@ -64,6 +64,8 @@ function SortGlyph({ direction }) {
  * - zebra:       striped rows                    (default false)
  * - stickyHeader: header stays put while the body scrolls (pair with `maxHeight`)
  * - maxHeight:   CSS max-height for the scroll body (enables vertical scroll)
+ * - minWidth:    CSS min-width for the table — below it the shell scrolls
+ *                horizontally instead of crushing columns (responsive default)
  * - sort:        { key, direction: 'asc' | 'desc' }   — controlled sort indicator
  * - onSortChange: (next: { key, direction }) => void
  * - selectable:  show the selection column          (default false)
@@ -97,6 +99,7 @@ export const Table = forwardRef(function Table(
     zebra = false,
     stickyHeader = false,
     maxHeight,
+    minWidth,
     sort,
     onSortChange,
     selectable = false,
@@ -276,7 +279,11 @@ export const Table = forwardRef(function Table(
         className="vds-table__scroll"
         style={maxHeight != null ? { maxHeight, overflowY: 'auto' } : undefined}
       >
-        <table className="vds-table__el" aria-describedby={caption ? captionId : undefined}>
+        <table
+          className="vds-table__el"
+          style={minWidth != null ? { minWidth } : undefined}
+          aria-describedby={caption ? captionId : undefined}
+        >
           {caption && (
             <caption id={captionId} className="vds-table__caption">
               {caption}

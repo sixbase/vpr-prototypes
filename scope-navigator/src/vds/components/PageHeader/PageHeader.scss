@@ -1,0 +1,124 @@
+// ============================================================================
+// PageHeader — the header band that opens a page: title, context, and controls.
+// Everything below the title is an optional slot (eyebrow, icon, meta, subtitle,
+// actions, tabs, filters), so the same component covers a bare title through a
+// rich, multi-row header. Built from semantic tokens; composes Icon.
+// ============================================================================
+@use '../../styles/typography' as type;
+
+.vds-page-header {
+  font-family: var(--vds-font-sans);
+  display: flex;
+  flex-direction: column;
+  gap: var(--vds-space-4);
+
+  // ---- top row: lead (left) ⟷ actions (right) ----
+  &__bar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--vds-space-4);
+    flex-wrap: wrap;
+  }
+
+  &__lead {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-3);
+    min-width: 0;
+  }
+
+  // ---- icon medallion (soft chip) ----
+  &__icon {
+    --vds-ph-icon-bg: var(--vds-primary-soft);
+    --vds-ph-icon-fg: var(--vds-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: var(--vds-radius-lg);
+    background-color: var(--vds-ph-icon-bg);
+    color: var(--vds-ph-icon-fg);
+
+    &--success {
+      --vds-ph-icon-bg: var(--vds-success-soft);
+      --vds-ph-icon-fg: var(--vds-success);
+    }
+    &--warning {
+      --vds-ph-icon-bg: var(--vds-warning-soft);
+      --vds-ph-icon-fg: var(--vds-warning);
+    }
+    &--danger {
+      --vds-ph-icon-bg: var(--vds-danger-soft);
+      --vds-ph-icon-fg: var(--vds-danger);
+    }
+    &--info {
+      --vds-ph-icon-bg: var(--vds-info-soft);
+      --vds-ph-icon-fg: var(--vds-info);
+    }
+  }
+
+  // ---- heading block ----
+  &__heading {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  &__eyebrow {
+    @include type.step(eyebrow);
+    text-transform: uppercase;
+    color: var(--vds-ink-subtle);
+  }
+  &__titlerow {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-3);
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  &__title {
+    @include type.step(title);
+    color: var(--vds-ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+  &__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--vds-space-2);
+  }
+  &__subtitle {
+    @include type.step(body);
+    color: var(--vds-ink-muted);
+    margin: 0;
+    max-width: 68ch;
+  }
+
+  // ---- actions (right) ----
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-2);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  // ---- tab strip ----
+  &__tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-1);
+    border-bottom: 1px solid var(--vds-line);
+  }
+
+  // ---- filter row ----
+  &__filters {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-2);
+    flex-wrap: wrap;
+  }
+}

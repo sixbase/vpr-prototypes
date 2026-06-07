@@ -14,14 +14,18 @@
   @include type.step(micro);
 
   &__dot {
-    width: 0.375rem;
-    height: 0.375rem;
+    width: 0.3125rem;
+    height: 0.3125rem;
     border-radius: 9999px;
     background-color: currentColor;
-    // Optical centering: flex-centering lands the dot a hair low against the
-    // label's visual mass. A small em-based lift (tracks font size) seats the
-    // dot at the middle of the text — judged by eye, not the line box.
-    transform: translateY(-0.15em);
+    // Optical centering. `align-items: center` centers the dot on the LINE
+    // BOX, but the text's ink isn't centered in that box — the font's
+    // ascent/descent are asymmetric (Rubik 11/14: baseline sits 10.5px down,
+    // so cap-center lands ~6.65px and x-height-center ~7.64px from the top,
+    // straddling the 7px geometric center). The dot's visual home is the
+    // lowercase body, so we nudge it down a touch toward the x-height center.
+    // Small + em-based so it tracks font size.
+    transform: translateY(0.03em);
   }
 
   &--neutral { background-color: var(--vds-canvas);       color: var(--vds-ink-muted); border-color: var(--vds-line); }
