@@ -31,7 +31,8 @@
     height: 1.25rem; // 20px
     padding: 2px;
     border-radius: 999px;
-    background-color: var(--vds-graphite-300);
+    // off track: the same neutral as the form-control resting border (flips in dark)
+    background-color: var(--vds-line-strong);
     transition: background-color var(--vds-dur-base) var(--vds-ease-out);
   }
 
@@ -50,6 +51,15 @@
     user-select: none;
   }
 
+  // hover (off, enabled) — track darkens toward ink
+  &:hover:not(&--disabled) &__input:not(:checked) ~ &__track {
+    background-color: color-mix(in oklab, var(--vds-line-strong), var(--vds-ink) 30%);
+  }
+  // hover (on, enabled) — brand track deepens
+  &:hover:not(&--disabled) &__input:checked ~ &__track {
+    background-color: var(--vds-primary-hover);
+  }
+
   &__input:focus-visible ~ &__track {
     outline: 2px solid var(--vds-focus-ring);
     outline-offset: 2px;
@@ -63,7 +73,4 @@
     transform: translateX(1rem);
   }
 }
-
-.dark .vds-switch__track {
-  background-color: var(--vds-graphite-700);
-}
+// No .dark override — line-strong flips to the Midnight ramp automatically.

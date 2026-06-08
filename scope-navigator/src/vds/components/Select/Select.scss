@@ -6,9 +6,13 @@
 @use '../../styles/typography' as type;
 
 .vds-select {
-  --vds-input-border: var(--vds-graphite-300);
-  --vds-input-muted: var(--vds-graphite-500);
-  --vds-input-fill: var(--vds-white); // light = white; dark recessed below
+  // Same SEMANTIC chrome as Input/Textarea so the trigger matches the form
+  // controls and flips light/dark for free. (Previously hard-bound to graphite,
+  // which left the dark trigger off-family — neutral grey instead of navy.)
+  --vds-input-border: var(--vds-line-strong);
+  --vds-input-border-hover: color-mix(in oklab, var(--vds-line-strong), var(--vds-ink) 30%);
+  --vds-input-muted: var(--vds-ink-subtle);
+  --vds-input-fill: var(--vds-surface-sunken);
 
   display: inline-flex;
   width: 100%;
@@ -32,6 +36,15 @@
     transition:
       border-color var(--vds-dur-fast) var(--vds-ease-out),
       box-shadow var(--vds-dur-fast) var(--vds-ease-out);
+
+    // hover (resting only) — border darkens toward ink
+    &:hover:not(:focus-visible):not([aria-expanded='true']) {
+      border-color: var(--vds-input-border-hover);
+    }
+    // active (pressed) — subtle neutral fill while the mouse is down
+    &:active:not([aria-expanded='true']) {
+      background-color: var(--vds-surface-hover);
+    }
 
     &:focus-visible {
       outline: none;
@@ -66,9 +79,4 @@
 
 // The open list reuses the canonical Popover menu (`vds-popover__menu` /
 // `__item`) — see Popover.scss. Select only owns the trigger chrome above.
-
-.dark .vds-select {
-  --vds-input-border: var(--vds-graphite-700);
-  --vds-input-muted: var(--vds-graphite-400);
-  --vds-input-fill: var(--vds-midnight-950);
-}
+// No .dark override — the chrome vars resolve through semantic tokens that flip.

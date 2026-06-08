@@ -1779,8 +1779,7 @@ body {
 }
 
 .vds-scope {
-  --vds-scope-hover: color-mix(in oklab, var(--vds-ink) 10%, transparent);
-  --vds-scope-hover-strong: color-mix(in oklab, var(--vds-ink) 18%, transparent);
+  --vds-popover-item-hover: color-mix(in oklab, var(--vds-ink) 7%, transparent);
   background-color: var(--vds-canvas);
   border-bottom: 1px solid var(--vds-line);
   padding: var(--vds-space-3) var(--vds-space-4);
@@ -1827,12 +1826,12 @@ body {
   padding-right: var(--vds-space-2);
 }
 .vds-scope__crumb:not(.vds-scope__crumb--active):hover {
-  background-color: var(--vds-scope-hover-strong);
+  background-color: var(--vds-surface-hover);
   border-color: var(--vds-line-strong);
   color: var(--vds-ink);
 }
 .vds-scope__crumb--active {
-  background-color: var(--vds-surface);
+  background-color: var(--vds-surface-raised);
   color: var(--vds-ink);
   border-color: var(--vds-line);
   box-shadow: var(--vds-shadow-sm);
@@ -1880,17 +1879,9 @@ body {
   transition: background-color var(--vds-dur-fast) var(--vds-ease-out), color var(--vds-dur-fast) var(--vds-ease-out), border-color var(--vds-dur-fast) var(--vds-ease-out);
 }
 .vds-scope__caret:hover, .vds-scope__caret--open {
-  background-color: var(--vds-scope-hover);
+  background-color: var(--vds-popover-item-hover);
   border-color: var(--vds-line-strong);
   color: var(--vds-ink);
-}
-.vds-scope__crumb--active .vds-scope__caret {
-  border-color: var(--vds-line);
-  color: var(--vds-ink-subtle);
-}
-.vds-scope__crumb--active .vds-scope__caret:hover, .vds-scope__crumb--active .vds-scope__caret--open {
-  background-color: var(--vds-canvas);
-  color: var(--vds-ink-muted);
 }
 .vds-scope button:focus-visible {
   outline: 2px solid var(--vds-focus-ring);
@@ -2005,7 +1996,7 @@ body {
 }
 .vds-scope__menu-btn:hover {
   color: var(--vds-ink-muted);
-  background-color: var(--vds-scope-hover);
+  background-color: var(--vds-popover-item-hover);
 }
 .vds-scope__menu-btn--active {
   color: var(--vds-primary);
@@ -2040,11 +2031,11 @@ body {
   transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
 }
 .vds-scope__menu-item:hover {
-  background-color: var(--vds-scope-hover);
+  background-color: var(--vds-popover-item-hover);
 }
 .vds-scope__menu-item--active {
-  background-color: var(--vds-scope-hover);
-  color: var(--vds-ink);
+  background-color: var(--vds-primary-soft);
+  color: var(--vds-primary);
   font-weight: 500;
 }
 .vds-scope__menu-item-icon {
@@ -2082,7 +2073,7 @@ body {
   transition: background-color var(--vds-dur-fast) var(--vds-ease-out), color var(--vds-dur-fast) var(--vds-ease-out);
 }
 .vds-scope__item:hover {
-  background-color: var(--vds-scope-hover);
+  background-color: var(--vds-popover-item-hover);
 }
 .vds-scope__item--current {
   background-color: var(--vds-primary-soft);
@@ -2141,7 +2132,7 @@ body {
 }
 .vds-scope__ellipsis:hover {
   color: var(--vds-ink);
-  background-color: var(--vds-scope-hover);
+  background-color: var(--vds-surface-hover);
 }
 .vds-scope__ellipsis-pop {
   position: absolute;
@@ -2177,7 +2168,7 @@ body {
   transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
 }
 .vds-scope__ellipsis-item:hover {
-  background-color: var(--vds-scope-hover);
+  background-color: var(--vds-popover-item-hover);
 }
 .vds-scope__ellipsis-label {
   font-size: 0.875rem;

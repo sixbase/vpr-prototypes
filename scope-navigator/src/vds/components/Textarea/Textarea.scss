@@ -4,13 +4,13 @@
 @use '../../styles/typography' as type;
 
 .vds-textarea {
-  // Neutral graphite chrome (same family as Input).
-  --vds-input-border: var(--vds-graphite-300);
+  // Chrome bound to SEMANTIC tokens (same family as Input) so it flips for free.
+  --vds-input-border: var(--vds-line-strong);
+  --vds-input-border-hover: color-mix(in oklab, var(--vds-line-strong), var(--vds-ink) 30%);
   --vds-input-border-focus: var(--vds-focus-ring);
   --vds-input-ring: color-mix(in oklab, var(--vds-focus-ring) 35%, transparent);
-  --vds-input-muted: var(--vds-graphite-500);
-  // Light fill is white; dark is recessed (set in the .dark override below).
-  --vds-input-fill: var(--vds-white);
+  --vds-input-muted: var(--vds-ink-subtle);
+  --vds-input-fill: var(--vds-surface-sunken);
 
   display: block;
   width: 100%;
@@ -28,6 +28,10 @@
     box-shadow var(--vds-dur-fast) var(--vds-ease-out);
 
   &::placeholder { color: var(--vds-input-muted); }
+
+  &:hover:not(:focus):not(.vds-textarea--invalid):not(.vds-textarea--disabled) {
+    border-color: var(--vds-input-border-hover);
+  }
 
   &:focus {
     outline: none;
@@ -52,11 +56,5 @@
   &--sm { padding: 0.375rem 0.625rem; @include type.step(detail); }
   &--lg { padding: 0.625rem 1rem;     @include type.step(body-lg); }
 }
-
-.dark .vds-textarea {
-  --vds-input-border: var(--vds-midnight-700);
-  --vds-input-border-focus: var(--vds-focus-ring);
-  --vds-input-ring: color-mix(in oklab, var(--vds-focus-ring) 40%, transparent);
-  --vds-input-muted: var(--vds-midnight-400);
-  --vds-input-fill: var(--vds-midnight-950); // recessed vs midnight-900 surface
-}
+// No .dark override needed — the chrome vars resolve through semantic tokens
+// that already flip to the Midnight ramp in dark mode.

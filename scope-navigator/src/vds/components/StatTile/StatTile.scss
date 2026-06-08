@@ -159,22 +159,12 @@
 
   // ---- chromatic tones (categorical: no good/bad meaning) ----
   // Color the icon glyph + soft chip; the sparkline follows automatically since
-  // sparkTone derives from tone. Light uses the 600 step; dark flips to the
-  // vivid 400 (below), mirroring the status tones' per-mode treatment.
+  // sparkTone derives from tone. Each maps to a semantic ACCENT token, which
+  // already carries the light→dark (600→400) flip — no per-mode override needed.
   @each $fam in azure, harbor, emerald, amber, rose, orchid, clay {
     &--#{$fam} {
-      --vds-stat-accent: var(--vds-#{$fam}-600);
-      --vds-stat-soft: color-mix(in oklab, var(--vds-#{$fam}-600) 16%, transparent);
-    }
-  }
-}
-
-// Dark mode — vivid 400 step for the chromatic tone accents (parity with light).
-.dark .vds-stat {
-  @each $fam in azure, harbor, emerald, amber, rose, orchid, clay {
-    &--#{$fam} {
-      --vds-stat-accent: var(--vds-#{$fam}-400);
-      --vds-stat-soft: color-mix(in oklab, var(--vds-#{$fam}-400) 16%, transparent);
+      --vds-stat-accent: var(--vds-accent-#{$fam});
+      --vds-stat-soft: var(--vds-accent-#{$fam}-soft);
     }
   }
 }

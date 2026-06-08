@@ -12,16 +12,16 @@
   &--danger  { color: var(--vds-danger); }
   &--muted   { color: var(--vds-ink-subtle); }
 
-  // Chromatic tones — for categorical series (not good/bad signals) that still
-  // want a distinct hue. Light uses the 600 step; dark flips to the vivid 400
-  // (below), mirroring how the status tones step per mode.
-  &--azure   { color: var(--vds-azure-600); }
-  &--harbor  { color: var(--vds-harbor-600); }
-  &--emerald { color: var(--vds-emerald-600); }
-  &--amber   { color: var(--vds-amber-600); }
-  &--rose    { color: var(--vds-rose-600); }
-  &--orchid  { color: var(--vds-orchid-600); }
-  &--clay    { color: var(--vds-clay-600); }
+  // Chromatic tones — categorical series (not good/bad signals). Each maps to a
+  // semantic ACCENT token, which already flips 600→400 in dark mode, so no
+  // per-mode override is needed here.
+  &--azure   { color: var(--vds-accent-azure); }
+  &--harbor  { color: var(--vds-accent-harbor); }
+  &--emerald { color: var(--vds-accent-emerald); }
+  &--amber   { color: var(--vds-accent-amber); }
+  &--rose    { color: var(--vds-accent-rose); }
+  &--orchid  { color: var(--vds-accent-orchid); }
+  &--clay    { color: var(--vds-accent-clay); }
 
   &__line {
     fill: none;
@@ -37,15 +37,5 @@
     stroke: none;
   }
 }
-
-// Dark mode — vivid 400 step for chromatic tones so lines stay legible on the
-// dark surface (parity with the status tones, which flip via their semantics).
-.dark .vds-sparkline {
-  &--azure   { color: var(--vds-azure-400); }
-  &--harbor  { color: var(--vds-harbor-400); }
-  &--emerald { color: var(--vds-emerald-400); }
-  &--amber   { color: var(--vds-amber-400); }
-  &--rose    { color: var(--vds-rose-400); }
-  &--orchid  { color: var(--vds-orchid-400); }
-  &--clay    { color: var(--vds-clay-400); }
-}
+// No dark override — the accent tokens above flip to their vivid 400 step in
+// dark mode on their own.

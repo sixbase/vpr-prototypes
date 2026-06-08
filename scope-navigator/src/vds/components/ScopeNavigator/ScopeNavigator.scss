@@ -2,15 +2,21 @@
 // ScopeNavigator — the MSP hierarchy breadcrumb bar. Composes Surface (popovers)
 // + Input (dropdown search) + Icon.
 //
-// THEME-FOLLOWING: the bar is built from plain SEMANTIC tokens (--vds-canvas /
-// surface / ink / line / shadow), so it renders LIGHT in light mode and switches
-// to the product navy under a `.dark` ancestor — no forced theme. Elevation in
-// light mode is carried by borders + shadows (light surfaces are all white); in
-// dark mode by the lighter Midnight steps. Translucent hover fills are color-mix
-// on --vds-ink (dark text in light mode, near-white in dark), so they flip for
-// free. The handful of dark-only refinements live in the `.dark .vds-scope`
-// block at the bottom (the popovers read too bright at the overlay step on navy,
-// so they drop one step and their dividers step up to compensate).
+// THEME-FOLLOWING: the bar is built from plain SEMANTIC tokens, so it renders
+// LIGHT in light mode and switches to the product navy under a `.dark` ancestor —
+// no forced theme. Interaction states use the system's shared vocabulary:
+//   • on-bar chips (breadcrumb nodes) step the ABSOLUTE elevation ladder —
+//     canvas → surface-hover (hover) → surface-raised (active pill) — so their
+//     feedback feels deliberate in both modes (light: shadow-led; dark: the
+//     Midnight steps lighten as they lift).
+//   • small bar controls (carets) + every popover/menu row hover with the
+//     canonical `--vds-popover-item-hover` relative overlay (color-mix on ink,
+//     7%) — it reads on any backdrop with no theme fork, matching the Popover /
+//     Select menus.
+//   • selected / current (the drilled-into entity, the active sort/filter) uses
+//     the canonical primary tint: primary-soft fill + primary text + a check.
+// The dark-only block at the bottom calms the floating popovers (overlay reads
+// too bright on the near-black bar, so it drops a step and its dividers step up).
 //
 // The bar is purely the scope trail — search and product toggles (e.g. "Future
 // State") are separate components composed alongside it. It measures its own
@@ -20,11 +26,12 @@
 @use '../../styles/typography' as type;
 
 .vds-scope {
-  // Local translucent overlays, derived from the (near-white, in dark) ink token.
-  // `hover` = subtle (menus, current-row tints); `hover-strong` = the obvious
-  // feedback on the primary interactive rows (breadcrumb nodes + result items).
-  --vds-scope-hover: color-mix(in oklab, var(--vds-ink) 10%, transparent);
-  --vds-scope-hover-strong: color-mix(in oklab, var(--vds-ink) 18%, transparent);
+  // Popover/menu rows + small bar controls (carets) hover with the SAME relative
+  // overlay the canonical Popover menu uses — a foreground-tracking tint that
+  // reads on any surface (the navy bar, the lighter popover) with no theme fork.
+  // Big bar chips (the breadcrumb nodes) instead step the absolute surface ladder
+  // (surface-hover → surface-raised) so their hover/active feel deliberate.
+  --vds-popover-item-hover: color-mix(in oklab, var(--vds-ink) 7%, transparent);
 
   background-color: var(--vds-canvas);
   border-bottom: 1px solid var(--vds-line);
@@ -91,16 +98,17 @@
     }
 
     &:not(.vds-scope__crumb--active):hover {
-      background-color: var(--vds-scope-hover-strong);
+      background-color: var(--vds-surface-hover);
       border-color: var(--vds-line-strong);
       color: var(--vds-ink);
     }
 
-    // Active / current scope = a raised surface pill. In light mode that's a white
-    // pill defined by its border + shadow on the near-white bar; in dark it's a
-    // lighter Midnight step lifting off the navy.
+    // Active / current scope = a raised surface pill, one rung up the elevation
+    // ladder from the inactive-hover fill (canvas → surface-hover → surface-raised).
+    // Light: a white pill defined by border + shadow on the near-white bar.
+    // Dark: midnight-800 lifting clearly off the 950 bar / 900 hover.
     &--active {
-      background-color: var(--vds-surface);
+      background-color: var(--vds-surface-raised);
       color: var(--vds-ink);
       border-color: var(--vds-line);
       box-shadow: var(--vds-shadow-sm);
@@ -157,22 +165,14 @@
       color var(--vds-dur-fast) var(--vds-ease-out),
       border-color var(--vds-dur-fast) var(--vds-ease-out);
 
+    // The relative overlay reads on any backdrop — the transparent inactive crumb,
+    // the surface-hover fill, or the raised active pill — so the caret needs no
+    // per-context override.
     &:hover,
     &--open {
-      background-color: var(--vds-scope-hover);
+      background-color: var(--vds-popover-item-hover);
       border-color: var(--vds-line-strong);
       color: var(--vds-ink);
-    }
-  }
-  // On the active (lighter) pill the caret reads against that surface.
-  &__crumb--active &__caret {
-    border-color: var(--vds-line);
-    color: var(--vds-ink-subtle);
-
-    &:hover,
-    &--open {
-      background-color: var(--vds-canvas);
-      color: var(--vds-ink-muted);
     }
   }
 
@@ -188,8 +188,10 @@
     justify-content: center;
     border-radius: var(--vds-radius-sm);
     flex-shrink: 0;
-    background-color: var(--vds-scope-chip-bg, var(--vds-midnight-600));
-    color: var(--vds-white);
+    // Default chip = brand fill + its on-color (both flip per theme so the text
+    // stays legible). A custom --vds-scope-chip-bg tint still overrides the fill.
+    background-color: var(--vds-scope-chip-bg, var(--vds-primary));
+    color: var(--vds-scope-chip-fg, var(--vds-on-primary));
 
     &--sm {
       width: 20px;
@@ -293,7 +295,7 @@
 
     &:hover {
       color: var(--vds-ink-muted);
-      background-color: var(--vds-scope-hover);
+      background-color: var(--vds-popover-item-hover);
     }
     &--active {
       color: var(--vds-primary);
@@ -326,11 +328,13 @@
     transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
 
     &:hover {
-      background-color: var(--vds-scope-hover);
+      background-color: var(--vds-popover-item-hover);
     }
+    // Selected sort/filter = the canonical primary tint (matches the result list
+    // + the Select / Popover menu).
     &--active {
-      background-color: var(--vds-scope-hover);
-      color: var(--vds-ink);
+      background-color: var(--vds-primary-soft);
+      color: var(--vds-primary);
       font-weight: 500;
     }
   }
@@ -374,7 +378,7 @@
       color var(--vds-dur-fast) var(--vds-ease-out);
 
     &:hover {
-      background-color: var(--vds-scope-hover);
+      background-color: var(--vds-popover-item-hover);
     }
     &--current {
       background-color: var(--vds-primary-soft);
@@ -436,7 +440,7 @@
 
     &:hover {
       color: var(--vds-ink);
-      background-color: var(--vds-scope-hover);
+      background-color: var(--vds-surface-hover);
     }
   }
   &__ellipsis-pop {
@@ -472,7 +476,7 @@
     transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
 
     &:hover {
-      background-color: var(--vds-scope-hover);
+      background-color: var(--vds-popover-item-hover);
     }
   }
   &__ellipsis-label {

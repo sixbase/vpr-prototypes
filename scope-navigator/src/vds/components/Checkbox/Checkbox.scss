@@ -38,9 +38,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--vds-graphite-400);
+    // semantic chrome: same resting border as form inputs, recessed fill.
+    border: 1px solid var(--vds-line-strong);
     border-radius: var(--vds-radius-sm);
-    background-color: var(--vds-white);
+    background-color: var(--vds-surface-sunken);
     transition:
       background-color var(--vds-dur-fast) var(--vds-ease-out),
       border-color var(--vds-dur-fast) var(--vds-ease-out);
@@ -49,6 +50,11 @@
   &__label {
     color: var(--vds-ink);
     user-select: none;
+  }
+
+  // hover (unchecked, enabled) — border darkens toward ink
+  &:hover:not(&--disabled) &__input:not(:checked):not(:indeterminate) ~ &__box {
+    border-color: color-mix(in oklab, var(--vds-line-strong), var(--vds-ink) 30%);
   }
 
   // focus ring (driven by the input's focus state)
@@ -87,7 +93,4 @@
   }
 }
 
-.dark .vds-checkbox__box {
-  border-color: var(--vds-graphite-600);
-  background-color: var(--vds-midnight-950);
-}
+// No .dark override — line-strong + surface-sunken already flip in dark mode.

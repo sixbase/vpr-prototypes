@@ -124,7 +124,7 @@
     // ~900ms to match the number count-up as the card enters the viewport.
     transition: width 0.9s var(--vds-ease-out);
 
-    &--azure { background-color: var(--vds-azure-500); }
+    &--azure { background-color: var(--vds-accent-azure); }
     &--primary { background-color: var(--vds-primary); }
     &--success { background-color: var(--vds-success); }
     &--danger { background-color: var(--vds-danger); }
@@ -161,24 +161,14 @@
   &--icon-warning { --vds-metric-accent: var(--vds-warning); --vds-metric-soft: var(--vds-warning-soft); }
   &--icon-danger  { --vds-metric-accent: var(--vds-danger);  --vds-metric-soft: var(--vds-danger-soft); }
 
-  // chromatic families (categorical): light uses the 600 step (dark flips to 400)
+  // chromatic families (categorical) → semantic ACCENT tokens, which already
+  // carry the light→dark (600→400) flip, so no per-mode override is needed.
   @each $fam in "azure", harbor, emerald, amber, rose, "orchid", clay {
     &--icon-#{$fam} {
-      --vds-metric-accent: var(--vds-#{$fam}-600);
-      --vds-metric-soft: color-mix(in oklab, var(--vds-#{$fam}-600) 16%, transparent);
+      --vds-metric-accent: var(--vds-accent-#{$fam});
+      --vds-metric-soft: var(--vds-accent-#{$fam}-soft);
     }
   }
-}
-
-// Dark mode — vivid 400 step for chromatic chips + azure bar (parity with light).
-.dark .vds-metric {
-  @each $fam in "azure", harbor, emerald, amber, rose, "orchid", clay {
-    &--icon-#{$fam} {
-      --vds-metric-accent: var(--vds-#{$fam}-400);
-      --vds-metric-soft: color-mix(in oklab, var(--vds-#{$fam}-400) 16%, transparent);
-    }
-  }
-  .vds-metric__bar-fill--azure { background-color: var(--vds-azure-400); }
 }
 
 // Honor reduced-motion: the bar snaps to its width instead of sliding (the JS
