@@ -1,0 +1,21 @@
+{
+  "name": "symphony-shell",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "comment": "Standalone prototype for the Current Left Nav shell. Reuses scope-navigator's node_modules + vendored DS via symlinks (node_modules, src/vds, src/vipre.css) to stay zero-install and in-sync. The DS source of truth is ../../vipre-design-system.",
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "lucide-react": "^0.577.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.0",
+    "vite": "^8.0.0"
+  }
+}

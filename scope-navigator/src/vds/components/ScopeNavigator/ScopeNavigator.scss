@@ -181,6 +181,45 @@
     outline-offset: 2px;
   }
 
+  // ====================================================================
+  // Basic variant — a denser, lower-chrome trail. Same structure + the same
+  // drill-down dropdown; only the trail's dimensions tighten: shorter pills,
+  // smaller icon chip + caret + chevron, and tighter gaps. (Drives `variant
+  // ="basic"` → the `.vds-scope--basic` modifier.)
+  // ====================================================================
+  &--basic &__trail {
+    gap: var(--vds-space-2);
+  }
+  &--basic &__crumb {
+    // 32px = caret(22) + padding(4·2) + border(1·2) — the caret is still the
+    // tallest child, so caret-less pills pin to the same height.
+    min-height: 32px;
+    padding: var(--vds-space-1) var(--vds-space-2);
+    @include type.step(detail);
+  }
+  &--basic &__crumb--has-caret {
+    padding-right: var(--vds-space-1);
+  }
+  &--basic &__crumb-main {
+    // A touch more breathing room between the chip and the label than the rest of
+    // the compact spacing, so the small chip doesn't crowd the name.
+    gap: var(--vds-space-2);
+  }
+  &--basic &__chip--sm {
+    width: 18px;
+    height: 18px;
+  }
+  &--basic &__caret {
+    width: 22px;
+    height: 22px;
+  }
+  // The chevron separator is an <Icon size="sm"> (16px via inline attrs); CSS
+  // width/height wins over presentation attributes, so this shrinks it to 14.
+  &--basic &__sep {
+    width: 14px;
+    height: 14px;
+  }
+
   // ---- icon chip (filled, family-tinted square) ----
   &__chip {
     display: inline-flex;

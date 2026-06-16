@@ -140,7 +140,7 @@ function OpportunityGauge({ score }) {
   const radius = 44;
   const circumference = Math.PI * radius;
   const progress = (score / 100) * circumference;
-  const gaugeColor = score >= 60 ? '#10b981' : score >= 30 ? '#f59e0b' : '#ef4444';
+  const gaugeColor = score >= 60 ? 'var(--vds-emerald-500)' : score >= 30 ? 'var(--vds-amber-500)' : 'var(--vds-rose-500)';
   const label = getOpportunityLabel(score);
   const labelColor = score >= 60 ? 'text-emerald-600 dark:text-emerald-400' : score >= 30 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
 
@@ -250,11 +250,11 @@ function CustomerGrowthSection({ entityId, period, hasChildren }) {
             <AreaChart data={growthData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#a1a1aa" stopOpacity={0.15} />
-                  <stop offset="100%" stopColor="#a1a1aa" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--vds-ink-subtle)" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="var(--vds-ink-subtle)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <Area type="monotone" dataKey="net" stroke="#a1a1aa" strokeWidth={1.5} fill="url(#netGrad)" dot={false} isAnimationActive animationDuration={600} />
+              <Area type="monotone" dataKey="net" stroke="var(--vds-ink-subtle)" strokeWidth={1.5} fill="url(#netGrad)" dot={false} isAnimationActive animationDuration={600} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -270,15 +270,15 @@ function CustomerGrowthSection({ entityId, period, hasChildren }) {
           <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={growthData} margin={{ top: 4, right: 0, bottom: 0, left: -20 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--vds-ink-subtle)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: 'var(--vds-ink-subtle)' }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: 'rgb(39 39 42)', border: '1px solid rgb(63 63 70)', borderRadius: '8px', fontSize: '11px', color: '#e4e4e7' }}
+                  contentStyle={{ backgroundColor: 'var(--vds-surface-raised)', border: '1px solid var(--vds-line)', borderRadius: '8px', fontSize: '11px', color: 'var(--vds-ink)' }}
                   formatter={(value, name) => [Math.abs(value), name === 'added' ? 'Added' : name === 'churned' ? 'Churned' : 'Net']}
                 />
-                <Bar dataKey="added" fill="#10b981" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="churned" fill="#ef4444" radius={[2, 2, 0, 0]} />
-                <Line type="monotone" dataKey="net" stroke="#71717a" strokeWidth={1.5} dot={false} />
+                <Bar dataKey="added" fill="var(--vds-emerald-500)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="churned" fill="var(--vds-rose-500)" radius={[2, 2, 0, 0]} />
+                <Line type="monotone" dataKey="net" stroke="var(--vds-ink-muted)" strokeWidth={1.5} dot={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -745,7 +745,7 @@ function ComplianceDonut({ score }) {
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie data={data} innerRadius={20} outerRadius={28} startAngle={90} endAngle={-270} dataKey="value" stroke="none">
-            <Cell fill={score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444'} />
+            <Cell fill={score >= 80 ? 'var(--vds-emerald-500)' : score >= 60 ? 'var(--vds-amber-500)' : 'var(--vds-rose-500)'} />
             <Cell fill="currentColor" className="text-zinc-100 dark:text-zinc-800" />
           </Pie>
         </PieChart>
@@ -1414,7 +1414,7 @@ function SummaryStatCard({ label, value, format, sparkSeed, period, variant }) {
           <div className="w-16 h-6 flex-shrink-0 mt-1">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={sparkData}>
-                <Line type="monotone" dataKey="v" stroke="#a1a1aa" strokeWidth={1.5} dot={false} isAnimationActive animationDuration={800} animationEasing="ease-out" />
+                <Line type="monotone" dataKey="v" stroke="var(--vds-ink-subtle)" strokeWidth={1.5} dot={false} isAnimationActive animationDuration={800} animationEasing="ease-out" />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -1587,7 +1587,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
   const periodText = period === '7D' ? '7 days' : period === '14D' ? '14 days' : period === '30D' ? '30 days' : '90 days';
 
   const activeProducts = ['Endpoint', 'Email Security', 'SafeSend'];
-  const productColors = { 'Endpoint': '#0596d2', 'Email Security': '#b269c3', 'SafeSend': '#2ca45b' };
+  const productColors = { 'Endpoint': 'var(--vds-azure-500)', 'Email Security': 'var(--vds-purple-500)', 'SafeSend': 'var(--vds-emerald-500)' };
 
   // Utilization
   const consumed = biz.seatsConsumed || 0;
@@ -1701,7 +1701,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
                         <div className="w-16 h-5 flex-shrink-0">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={generateSparkline(entity.id + 'mrr', biz.mrr || 0, period)}>
-                              <Line type="monotone" dataKey="v" stroke="#10b981" strokeWidth={1.5} dot={false} isAnimationActive animationDuration={800} animationEasing="ease-out" />
+                              <Line type="monotone" dataKey="v" stroke="var(--vds-emerald-500)" strokeWidth={1.5} dot={false} isAnimationActive animationDuration={800} animationEasing="ease-out" />
                             </LineChart>
                           </ResponsiveContainer>
                         </div>
@@ -1909,10 +1909,10 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
               entityId={entity.id} period={period}
               agentVersions={ops.agentVersions}
               metrics={[
-                { label: 'Devices protected', value: scaleByPeriod(products.endpoint?.devicesProtected || 0, period, entity.id + 'ep-dev'), sparkSeed: entity.id + 'ep-dev', strokeColor: '#0596d2' },
-                { label: 'Threats blocked', value: scaleByPeriod(products.endpoint?.threatsBlocked || 0, period, entity.id + 'ep-thr'), sparkSeed: entity.id + 'ep-thr', strokeColor: '#0596d2' },
-                { label: 'Scans completed', value: scaleByPeriod(products.endpoint?.scansCompleted || 0, period, entity.id + 'ep-scan'), sparkSeed: entity.id + 'ep-scan', strokeColor: '#0596d2' },
-                { label: 'Compliance', value: (products.endpoint?.complianceRate || 0) + '%', sparkSeed: entity.id + 'ep-comp', strokeColor: '#0596d2' },
+                { label: 'Devices protected', value: scaleByPeriod(products.endpoint?.devicesProtected || 0, period, entity.id + 'ep-dev'), sparkSeed: entity.id + 'ep-dev', strokeColor: 'var(--vds-azure-500)' },
+                { label: 'Threats blocked', value: scaleByPeriod(products.endpoint?.threatsBlocked || 0, period, entity.id + 'ep-thr'), sparkSeed: entity.id + 'ep-thr', strokeColor: 'var(--vds-azure-500)' },
+                { label: 'Scans completed', value: scaleByPeriod(products.endpoint?.scansCompleted || 0, period, entity.id + 'ep-scan'), sparkSeed: entity.id + 'ep-scan', strokeColor: 'var(--vds-azure-500)' },
+                { label: 'Compliance', value: (products.endpoint?.complianceRate || 0) + '%', sparkSeed: entity.id + 'ep-comp', strokeColor: 'var(--vds-azure-500)' },
               ]}
             />
 
@@ -1920,10 +1920,10 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
               title="Email Security" icon={Mail} iconColor="text-orchid-600 dark:text-orchid-400" accentBorder="border-l-orchid-400"
               entityId={entity.id} period={period}
               metrics={[
-                { label: 'Emails scanned', value: scaleByPeriod(products.emailSecurity?.emailsScanned || 0, period, entity.id + 'es-scan'), sparkSeed: entity.id + 'es-scan', strokeColor: '#b269c3' },
-                { label: 'Threats caught', value: scaleByPeriod(products.emailSecurity?.threatsCaught || 0, period, entity.id + 'es-thr'), sparkSeed: entity.id + 'es-thr', strokeColor: '#b269c3' },
-                { label: 'Phishing blocked', value: scaleByPeriod(products.emailSecurity?.phishingBlocked || 0, period, entity.id + 'es-ph'), sparkSeed: entity.id + 'es-ph', strokeColor: '#b269c3' },
-                { label: 'Spam filtered', value: scaleByPeriod(products.emailSecurity?.spamFiltered || 0, period, entity.id + 'es-sp'), sparkSeed: entity.id + 'es-sp', strokeColor: '#b269c3' },
+                { label: 'Emails scanned', value: scaleByPeriod(products.emailSecurity?.emailsScanned || 0, period, entity.id + 'es-scan'), sparkSeed: entity.id + 'es-scan', strokeColor: 'var(--vds-purple-500)' },
+                { label: 'Threats caught', value: scaleByPeriod(products.emailSecurity?.threatsCaught || 0, period, entity.id + 'es-thr'), sparkSeed: entity.id + 'es-thr', strokeColor: 'var(--vds-purple-500)' },
+                { label: 'Phishing blocked', value: scaleByPeriod(products.emailSecurity?.phishingBlocked || 0, period, entity.id + 'es-ph'), sparkSeed: entity.id + 'es-ph', strokeColor: 'var(--vds-purple-500)' },
+                { label: 'Spam filtered', value: scaleByPeriod(products.emailSecurity?.spamFiltered || 0, period, entity.id + 'es-sp'), sparkSeed: entity.id + 'es-sp', strokeColor: 'var(--vds-purple-500)' },
               ]}
               footer={ops.domainHealth && (
                 <div className="flex items-center gap-4">
@@ -1951,10 +1951,10 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
               title="SafeSend" icon={Send} iconColor="text-emerald-600 dark:text-emerald-400" accentBorder="border-l-emerald-400"
               entityId={entity.id} period={period}
               metrics={[
-                { label: 'Emails sent', value: scaleByPeriod(products.safeSend?.emailsSent || 0, period, entity.id + 'ss-sent'), sparkSeed: entity.id + 'ss-sent', strokeColor: '#2ca45b' },
-                { label: 'Attachments scanned', value: scaleByPeriod(products.safeSend?.attachmentsScanned || 0, period, entity.id + 'ss-att'), sparkSeed: entity.id + 'ss-att', strokeColor: '#2ca45b' },
-                { label: 'DLP triggers', value: scaleByPeriod(products.safeSend?.dlpTriggers || 0, period, entity.id + 'ss-dlp'), sparkSeed: entity.id + 'ss-dlp', strokeColor: '#2ca45b' },
-                { label: 'Recipients verified', value: scaleByPeriod(products.safeSend?.recipientsVerified || 0, period, entity.id + 'ss-rec'), sparkSeed: entity.id + 'ss-rec', strokeColor: '#2ca45b' },
+                { label: 'Emails sent', value: scaleByPeriod(products.safeSend?.emailsSent || 0, period, entity.id + 'ss-sent'), sparkSeed: entity.id + 'ss-sent', strokeColor: 'var(--vds-emerald-500)' },
+                { label: 'Attachments scanned', value: scaleByPeriod(products.safeSend?.attachmentsScanned || 0, period, entity.id + 'ss-att'), sparkSeed: entity.id + 'ss-att', strokeColor: 'var(--vds-emerald-500)' },
+                { label: 'DLP triggers', value: scaleByPeriod(products.safeSend?.dlpTriggers || 0, period, entity.id + 'ss-dlp'), sparkSeed: entity.id + 'ss-dlp', strokeColor: 'var(--vds-emerald-500)' },
+                { label: 'Recipients verified', value: scaleByPeriod(products.safeSend?.recipientsVerified || 0, period, entity.id + 'ss-rec'), sparkSeed: entity.id + 'ss-rec', strokeColor: 'var(--vds-emerald-500)' },
               ]}
             />
           </div>
@@ -1973,10 +1973,10 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
                       </linearGradient>
                     ))}
                   </defs>
-                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#a1a1aa' }} axisLine={false} tickLine={false} ticks={[0, 50, 100]} />
-                  <Tooltip contentStyle={{ backgroundColor: 'rgb(39 39 42)', border: '1px solid rgb(63 63 70)', borderRadius: '8px', fontSize: '11px', color: '#e4e4e7' }} />
-                  <Legend verticalAlign="bottom" height={24} iconType="plainline" wrapperStyle={{ fontSize: '11px', color: '#71717a' }} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--vds-ink-subtle)' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: 'var(--vds-ink-subtle)' }} axisLine={false} tickLine={false} ticks={[0, 50, 100]} />
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--vds-surface-raised)', border: '1px solid var(--vds-line)', borderRadius: '8px', fontSize: '11px', color: 'var(--vds-ink)' }} />
+                  <Legend verticalAlign="bottom" height={24} iconType="plainline" wrapperStyle={{ fontSize: '11px', color: 'var(--vds-ink-muted)' }} />
                   {activeProducts.map(p => (
                     <Area key={p} type="monotone" dataKey={p} name={p} stroke={productColors[p]} strokeWidth={2} fill={`url(#grad-${p.replace(/\s/g, '')})`} dot={false} isAnimationActive animationDuration={1000} animationEasing="ease-out" />
                   ))}

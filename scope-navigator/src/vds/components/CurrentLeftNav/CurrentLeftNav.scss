@@ -1,0 +1,487 @@
+// ============================================================================
+// CurrentLeftNav — the VIPRE product navigation rail as it ships TODAY, captured
+// as a DS component: a centered brand lockup, a standalone "Overview" entry, a
+// stack of bordered product cards (brand glyph + collapsible sub-pages + a
+// "full portal" escape link), locked teaser rows, and a pinned account footer.
+//
+// Intentionally NOT theme-following (unlike SideNav): it reproduces the shipped
+// chrome, which is always the deep product navy. Every surface is a local
+// --vds-clnav-* knob seeded with the production value, so a consumer can retint
+// a single rail without forking the component.
+// ============================================================================
+@use '../../styles/typography' as type;
+
+.vds-clnav {
+  // ---- the shipped palette, exposed as overridable knobs ----
+  --vds-clnav-w: 13.625rem; // 218px
+  --vds-clnav-bg: #0b192d; // == --vds-midnight-950
+  --vds-clnav-card-bg: rgba(0, 0, 0, 0.3);
+  --vds-clnav-card-line: #1a2734; // fallback solid card border
+  // Gradient stroke on each product card — lit from above. NOTE: stops are a
+  // best-guess pending the exact Figma values; override this one knob to match.
+  --vds-clnav-card-border-gradient: linear-gradient(180deg, #34465a 0%, #1f2d3c 45%, #131c27 100%);
+  --vds-clnav-brand-glyph: #b8c2cb; // silver product glyph
+  --vds-clnav-label: #cfd4d8; // product / overview labels
+  --vds-clnav-item-label: #ced0d2; // sub-page labels
+  --vds-clnav-locked-label: #aeb3ba;
+  --vds-clnav-escape: #8fa4b9; // "full portal" italic link
+  --vds-clnav-muted: #5b6b7d;
+  --vds-clnav-accent: #1f6feb; // active product toggle fill
+  --vds-clnav-selected: #0068cb; // selected nav item background
+  --vds-clnav-selected-ink: #ffffff; // selected nav item text / icon
+  --vds-clnav-footer-label: #ffffff;
+  --vds-clnav-hover: rgba(255, 255, 255, 0.06);
+  --vds-clnav-connector: rgba(255, 255, 255, 0.4); // the dotted vertical rail threading sub-item nodes
+  --vds-clnav-node-bg: #081220; // card bg, flattened — opaque so the rail breaks at each node
+  --vds-clnav-node-ring: #344250; // ring around each sub-item icon node
+  --vds-clnav-toggle-ring: rgba(255, 255, 255, 0.16); // outline on the collapse toggle
+
+  display: flex;
+  flex-direction: column;
+  width: var(--vds-clnav-w);
+  flex-shrink: 0;
+  height: 100%;
+  min-height: 0;
+  padding-top: 1.4375rem; // 23px
+  background-color: var(--vds-clnav-bg);
+  font-family: var(--vds-font-sans);
+  color: var(--vds-clnav-label);
+  transition: width var(--vds-dur-base) var(--vds-ease-out);
+
+  // ---- centered brand lockup ----
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0 var(--vds-space-4) var(--vds-space-6);
+    color: #ffffff;
+  }
+
+  // ---- scrollable middle ----
+  &__scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 var(--vds-space-2) var(--vds-space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--vds-space-4);
+
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, #ffffff 16%, transparent) transparent;
+    &::-webkit-scrollbar { width: 4px; height: 4px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb {
+      background: color-mix(in oklab, #ffffff 16%, transparent);
+      border-radius: 9999px;
+    }
+    &::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, #ffffff 28%, transparent); }
+  }
+
+  // ---- standalone Overview entry ----
+  &__overview {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-1);
+    width: 100%;
+    text-align: left;
+    padding: var(--vds-space-1) var(--vds-space-4);
+    border: 0;
+    background: transparent;
+    border-radius: var(--vds-radius-md);
+    color: var(--vds-clnav-label);
+    cursor: pointer;
+    transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
+    &:hover { background-color: var(--vds-clnav-hover); }
+    &--active {
+      background-color: var(--vds-clnav-selected);
+      color: var(--vds-clnav-selected-ink);
+    }
+  }
+  &__overview-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    color: var(--vds-clnav-brand-glyph);
+  }
+  &__overview-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    @include type.step(body);
+  }
+
+  // ---- product card stack ----
+  &__stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vds-space-2);
+  }
+
+  &__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--vds-clnav-card-bg);
+    border: 1px solid var(--vds-clnav-card-line); // fallback if mask unsupported
+    border-radius: 5px;
+    padding-bottom: var(--vds-space-2);
+    overflow: hidden;
+    &--collapsed { padding-bottom: 0; }
+  }
+  // Gradient border — a 1px ring painted over the solid fallback via the
+  // mask-composite "cut out the middle" trick, so the card fill stays untouched.
+  &__card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--vds-clnav-card-border-gradient);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  &__card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-1);
+    width: 100%;
+    text-align: left;
+    padding: 0.4375rem var(--vds-space-2) var(--vds-space-1); // 7 8 4
+    border: 0;
+    background: transparent;
+    color: var(--vds-clnav-label);
+  }
+  button#{&}__card-header { cursor: pointer; }
+  &__card-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    color: var(--vds-clnav-brand-glyph);
+  }
+  &__card-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    @include type.step(body);
+  }
+  &__card-toggle {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid var(--vds-clnav-toggle-ring);
+    border-radius: 9999px;
+    color: var(--vds-clnav-muted);
+    // Active product: the toggle becomes a filled accent chip so you can see
+    // which product the current page lives inside.
+    &--active {
+      border-color: transparent;
+      background-color: var(--vds-clnav-accent);
+      color: #ffffff;
+    }
+  }
+
+  &__card-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  // ---- sub-page rows ----
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--vds-space-1);
+    width: 100%;
+    text-align: left;
+    padding: var(--vds-space-1) var(--vds-space-2);
+    border: 0;
+    background: transparent;
+    border-radius: var(--vds-radius-sm);
+    color: var(--vds-clnav-item-label);
+    cursor: pointer;
+    transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
+    &:hover { background-color: var(--vds-clnav-hover); }
+    // Selected sub-page — solid blue chip with white ink.
+    &--active {
+      background-color: var(--vds-clnav-selected);
+      color: var(--vds-clnav-selected-ink);
+      font-weight: 500;
+    }
+    &--active:hover { background-color: var(--vds-clnav-selected); }
+  }
+  // On the selected row the icon turns white and its node circle blends into the
+  // blue, so the dotted rail reads as passing cleanly through the lit node.
+  &__item--active &__item-glyph { color: var(--vds-clnav-selected-ink); }
+  &__item--active &__item-glyph svg { background-color: var(--vds-clnav-selected); }
+  // The icon gutter is also the connector rail: a thin vertical line runs down
+  // its center, threading each sub-item's icon node (and the escape node) like a
+  // timeline. The line is drawn as a ::before; the node chip (the icon's own
+  // opaque circle below) breaks it at each stop.
+  &__item-glyph {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    color: color-mix(in oklab, var(--vds-clnav-item-label) 80%, transparent);
+  }
+  &__item-glyph::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    // The glyph is only as tall as the icon, so the dots live in the row's
+    // padding *between* glyphs — extend the rail by the item's vertical padding
+    // so it spans the full row and the dots show in the 8px gaps.
+    top: calc(var(--vds-space-1) * -1);
+    bottom: calc(var(--vds-space-1) * -1);
+    width: 1.5px;
+    transform: translateX(-50%);
+    // Dotted rail: a 1.5px dot every 4px, painted as a repeating gradient so the
+    // dots stay crisp at any DPR.
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--vds-clnav-connector) 0 1.5px,
+      transparent 1.5px 4px
+    );
+    z-index: 0;
+  }
+  // Trim the rail above the first node and below the last one. `:not(:has(~ item))`
+  // is the last sub-item whether or not a "full portal" escape follows it.
+  &__card-body > &__item:first-child &__item-glyph::before { top: 50%; }
+  &__card-body > &__item:not(:has(~ &__item)) &__item-glyph::before { bottom: 50%; }
+
+  // Each sub-item icon breaks the rail: a flattened-card-bg circle exactly the
+  // icon's size, painted above the dotted line. Sized to the icon (no ring) so
+  // ~8px of dots stay visible between consecutive icons.
+  &__item-glyph svg {
+    position: relative;
+    z-index: 1;
+    border-radius: 9999px;
+    background-color: var(--vds-clnav-node-bg);
+  }
+
+  // ---- silver gradient on the product / overview brand glyphs (stroke icons) ----
+  &__overview-icon svg,
+  &__card-icon svg,
+  &__locked-icon svg {
+    stroke: url(#vds-clnav-brand-gradient);
+  }
+  &__locked-icon svg { opacity: 0.72; }
+  &__item-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    @include type.step(detail);
+  }
+  &__item-badge {
+    flex-shrink: 0;
+    @include type.step(detail);
+    color: var(--vds-clnav-item-label);
+    background-color: var(--vds-clnav-hover);
+    padding: 0 var(--vds-space-2);
+    border-radius: 9999px;
+  }
+
+  // ---- "full portal" escape link ----
+  &__escape {
+    display: flex;
+    align-items: center;
+    gap: 0.6875rem; // 11px
+    width: 100%;
+    text-align: left;
+    padding: var(--vds-space-2) var(--vds-space-2) var(--vds-space-2) var(--vds-space-4);
+    border: 0;
+    background: transparent;
+    color: var(--vds-clnav-escape);
+    cursor: pointer;
+    transition: color var(--vds-dur-fast) var(--vds-ease-out);
+    &:hover { color: color-mix(in oklab, var(--vds-clnav-escape) 70%, #ffffff); }
+  }
+  &__escape-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid #344250;
+    border-radius: 9999px;
+    color: currentColor;
+  }
+  &__escape-label {
+    @include type.step(micro);
+    font-style: italic;
+  }
+
+  // ---- locked / no-entitlement product (flat teaser row) ----
+  &__locked {
+    display: flex;
+    align-items: center;
+    gap: 0.3125rem; // 5px
+    padding: 0.4375rem var(--vds-space-3) var(--vds-space-1) var(--vds-space-2);
+    color: var(--vds-clnav-locked-label);
+  }
+  &__locked-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    color: color-mix(in oklab, var(--vds-clnav-brand-glyph) 70%, transparent);
+  }
+  &__locked-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    @include type.step(body);
+  }
+  &__locked-lock {
+    flex-shrink: 0;
+    color: var(--vds-clnav-muted);
+  }
+
+  // ---- pinned account / admin footer ----
+  &__footer {
+    flex-shrink: 0;
+    padding: var(--vds-space-2) 0 var(--vds-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem; // 6px
+  }
+  &__footer-item {
+    display: flex;
+    align-items: center;
+    padding-right: var(--vds-space-2);
+    border-radius: var(--vds-radius-md);
+    transition: background-color var(--vds-dur-fast) var(--vds-ease-out);
+    &:hover { background-color: var(--vds-clnav-hover); }
+    &--active { background-color: var(--vds-clnav-selected); }
+  }
+  &__footer-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 0.4375rem; // 7px
+    padding: var(--vds-space-2) var(--vds-space-2) var(--vds-space-2) 0.875rem; // l 14px
+    border: 0;
+    background: transparent;
+    color: var(--vds-clnav-footer-label);
+    cursor: pointer;
+  }
+  &__footer-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1875rem;
+    height: 1.1875rem;
+  }
+  &__footer-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    @include type.step(body);
+  }
+  &__footer-trailing {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1875rem;
+    height: 1.1875rem;
+    border: 0;
+    background: transparent;
+    color: var(--vds-clnav-footer-label);
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity var(--vds-dur-fast) var(--vds-ease-out);
+    &:hover { opacity: 1; }
+  }
+
+  // ---- focus ----
+  & button:focus-visible {
+    outline: 2px solid var(--vds-focus-ring);
+    outline-offset: 2px;
+  }
+
+  // ==========================================================================
+  // Collapsed (icon-only) rail. Same markup, restyled: labels vanish, cards
+  // shrink to 48px icon tiles (the dotted connector rail stays centered), locked
+  // products become bare glyphs, the active product keeps a small accent chevron
+  // badge, and the footer stacks to centered icons (log-out drops to its own row).
+  // ==========================================================================
+  &--collapsed {
+    --vds-clnav-w: 4rem; // 64px
+
+    // hide every text label
+    .vds-clnav__overview-label,
+    .vds-clnav__card-title,
+    .vds-clnav__item-label,
+    .vds-clnav__item-badge,
+    .vds-clnav__escape-label,
+    .vds-clnav__locked-label,
+    .vds-clnav__footer-label {
+      display: none;
+    }
+
+    .vds-clnav__scroll { padding-left: 0; padding-right: 0; align-items: center; }
+    .vds-clnav__stack { align-items: center; }
+
+    // Overview → centered glyph
+    .vds-clnav__overview { width: 2.5rem; justify-content: center; padding: var(--vds-space-1); }
+
+    // Cards → 48px icon tiles. Allow the active chevron badge to peek out.
+    .vds-clnav__card { width: 3rem; overflow: visible; }
+    .vds-clnav__card-header { justify-content: center; padding: 0.4375rem 0 var(--vds-space-1); position: relative; }
+    // The collapse chevron hides; only the active product shows it, as a small
+    // accent badge tucked to the card's top-right edge.
+    .vds-clnav__card-toggle { display: none; }
+    .vds-clnav__card--active .vds-clnav__card-toggle {
+      display: flex;
+      position: absolute;
+      top: 0.25rem;
+      right: -0.375rem;
+      width: 1.125rem;
+      height: 1.125rem;
+      box-shadow: 0 0 0 2px var(--vds-clnav-card-bg);
+    }
+
+    // Sub-item rows → centered icon nodes on the dotted rail
+    .vds-clnav__item { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
+    .vds-clnav__escape { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
+
+    // Locked products → bare centered glyph, no padlock
+    .vds-clnav__locked { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
+    .vds-clnav__locked-lock { display: none; }
+
+    // Footer → centered icons; the trailing log-out drops to its own row
+    .vds-clnav__footer { align-items: center; padding-left: 0; padding-right: 0; }
+    .vds-clnav__footer-item { flex-direction: column; padding-right: 0; gap: var(--vds-space-1); }
+    .vds-clnav__footer-main { justify-content: center; padding: var(--vds-space-1) 0; gap: 0; }
+  }
+}

@@ -1,0 +1,70 @@
+/* Vendored Vipre Design System bundle — :root{--vds-*} tokens, the Rubik
+   typescale classes, every component's BEM styles, and the .dark overrides.
+   Symlinked to scope-navigator's copy; source of truth is ../../vipre-design-system. */
+@import "./vipre.css";
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--vds-font-sans);
+  background: var(--vds-canvas);
+  color: var(--vds-ink);
+}
+
+/* Native dark UI controls (scrollbars, etc.) under a .dark ancestor. */
+.dark { color-scheme: dark; }
+
+/* ---- Full-portal dual rail (PortalNav) ---- */
+.pnav-strip-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.pnav-strip-btn:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.pnav-item {
+  font: inherit;
+  background: transparent;
+  color: inherit;
+}
+/* hover only on non-selected rows; the selected row keeps its inline blue */
+.pnav-item:not([aria-current="page"]):hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---- Option B (side-by-side) ---- */
+.obrow { font: inherit; background: transparent; }
+.obrow-pill { transition: background-color 120ms ease; }
+.obrow:not(.obrow--name):not([aria-current]):hover .obrow-pill { background: rgba(255, 255, 255, 0.07); }
+.obrow--light:not([aria-current="page"]):hover .obrow-pill { background: rgba(11, 25, 45, 0.06); }
+
+/* Product headers: hover the NAME (underline only), no background bar — keeps the
+   icon column aligned with the VIPRE mark. */
+.obrow--name:hover .obrow-label { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, 0.55); }
+.obrow-label { transition: text-decoration-color 120ms ease; }
+
+/* Option C — home (VIPRE mark) button + product-switcher dropdown */
+.ob-home { border-radius: 8px; transition: background-color 120ms ease; animation: ob-fade-in 240ms ease both; }
+.ob-home:hover { background: rgba(255, 255, 255, 0.07); }
+@keyframes ob-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.ob-switch-item:hover { background: rgba(11, 25, 45, 0.06) !important; }
+
+/* Hide the nav scrollbars so the active-bar margins stay symmetric (a classic
+   scrollbar eats ~11-15px on the right). Content still scrolls via wheel/trackpad. */
+.ob-scroll-dark, .ob-scroll-light { scrollbar-width: none; -ms-overflow-style: none; }
+.ob-scroll-dark::-webkit-scrollbar, .ob-scroll-light::-webkit-scrollbar { width: 0; height: 0; }

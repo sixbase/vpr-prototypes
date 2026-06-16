@@ -29,6 +29,7 @@ export { Text, Heading } from './Text/index.js'
 
 // Composites — domain components assembled from the primitives above.
 export { SideNav } from './SideNav/index.js'
+export { CurrentLeftNav, CurrentLeftNavLogOutIcon } from './CurrentLeftNav/index.js'
 export { PageHeader } from './PageHeader/index.js'
 export {
   ScopeNavigator,

@@ -491,6 +491,9 @@ function BreadcrumbSegment({
  * - typeConfig:    type → { label, icon, tone }         (default Vipre taxonomy)
  * - statusConfig:  status → { label, tone, description } (default active/trial/suspended)
  * - sortOptions:   dropdown sort options                (default defaultSortOptions)
+ * - variant:       'full' | 'basic' — 'basic' is a denser, lower-chrome trail
+ *                  (shorter pills, smaller chips/caret, tighter gaps); the
+ *                  drill-down dropdown is unchanged   (default 'full')
  * - teleportedSegments: Set<id> — segments to flash-highlight (e.g. after a jump)
  *
  * @example
@@ -511,11 +514,13 @@ export const ScopeNavigator = forwardRef(function ScopeNavigator(
     statusConfig = defaultStatusConfig,
     sortOptions = defaultSortOptions,
     teleportedSegments,
+    variant = 'full',
     className,
     ...props
   },
   ref,
 ) {
+  const isBasic = variant === 'basic'
   const typeOrder = Object.keys(typeConfig)
   const statusOrder = Object.keys(statusConfig)
 
@@ -590,13 +595,18 @@ export const ScopeNavigator = forwardRef(function ScopeNavigator(
   const n = allSegments.length
   const w = navWidth || 9999
   const LABEL_CAP = 180
-  const GAP = 28 // chevron + gaps between segments
-  const ELL = 44 // the "…" chip
+  // The "basic" variant renders denser chrome, so its width estimate uses tighter
+  // constants — otherwise it would collapse into the "…" menu earlier than needed.
+  const GAP = isBasic ? 20 : 28 // chevron + gaps between segments
+  const ELL = isBasic ? 36 : 44 // the "…" chip
+  const BASE = isBasic ? 26 : 36 // chip + padding around the label
+  const CARET = isBasic ? 22 : 28 // the drill-down caret
+  const CHAR = isBasic ? 6.2 : 7.2 // px per label character
   const reserved = 32 // the nav's own horizontal padding; the trail owns the rest
   const avail = w - reserved
   const segW = (seg) => {
     const len = seg.isRoot ? 12 : (seg.label || '').length
-    return 36 + Math.min(LABEL_CAP, len * 7.2) + (seg.dropdownItems?.length ? 28 : 0)
+    return BASE + Math.min(LABEL_CAP, len * CHAR) + (seg.dropdownItems?.length ? CARET : 0)
   }
   const widthOf = (segs) =>
     segs.reduce((s, x) => s + (x === 'ellipsis' ? ELL : segW(x)), 0) + GAP * Math.max(0, segs.length - 1)
@@ -619,7 +629,7 @@ export const ScopeNavigator = forwardRef(function ScopeNavigator(
   return (
     <nav
       ref={mergeRefs(ref, navRef)}
-      className={cx('vds-scope', className)}
+      className={cx('vds-scope', isBasic && 'vds-scope--basic', className)}
       {...props}
     >
       <div className="vds-scope__trail">

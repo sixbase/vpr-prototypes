@@ -1,0 +1,98 @@
+/* Symphony × Scope shell — row hover + hidden-scrollbar classes ported from the
+   shell sandbox. Workspace-context (light) hovers are bound to --vds-ink via
+   color-mix so they flip correctly in dark mode; Symphony-context (dark, on navy)
+   hovers stay white-alpha since that menu is always navy. Scoped to .obrow / .ob-*
+   so they don't touch the rest of the app. */
+.obrow { font: inherit; background: transparent; }
+.obrow-pill { transition: background-color 120ms ease; }
+.obrow:not(.obrow--name):not([aria-current]):hover .obrow-pill { background: color-mix(in srgb, var(--vds-white) 10%, transparent); }
+.obrow--light:not([aria-current="page"]):hover .obrow-pill { background: color-mix(in srgb, var(--vds-ink) 7%, transparent); }
+
+/* Product headers in the Symphony menu: underline the name on hover (no bg bar),
+   keeping the icon column aligned with the breadcrumb mark. */
+.obrow--name:hover .obrow-label { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--vds-white) 55%, transparent); }
+.obrow-label { transition: text-decoration-color 120ms ease; }
+
+/* Product switcher reads as a dropdown control: a clearer hover than the nav rows,
+   and it stays lit while the menu is open. (Same specificity as the generic
+   obrow--light hover above, so it wins on source order.) */
+.obrow--light.ob-switcher:hover .obrow-pill,
+.obrow--light.ob-switcher[aria-expanded="true"] .obrow-pill { background: color-mix(in srgb, var(--vds-ink) 10%, transparent); }
+
+/* Product-switcher dropdown items (light surface). */
+.ob-switch-item:hover { background: color-mix(in srgb, var(--vds-ink) 7%, transparent) !important; }
+
+/* The Customers page (DashboardPageB) self-frames with rounded-2xl (16px); match it
+   to the shell's other content cards (8px). Unlayered, so it wins over the utility. */
+.shell-customers main { border-radius: 8px; }
+
+/* Use DS colors throughout the Customers page. Tailwind v4 colors are CSS vars, so
+   remapping them on the host cascades to every utility inside (scoped to .shell-customers;
+   the rest of the app is untouched). amber/azure/emerald/rose/graphite/midnight are
+   already DS via @theme — these are the off-palette families DashboardPageB still uses:
+     zinc → graphite (neutrals)    blue / sky / cyan → azure
+     violet / indigo → purple      teal → emerald                                       */
+.shell-customers {
+  --color-zinc-50: var(--vds-graphite-50);   --color-zinc-100: var(--vds-graphite-100);
+  --color-zinc-200: var(--vds-graphite-200); --color-zinc-300: var(--vds-graphite-300);
+  --color-zinc-400: var(--vds-graphite-400); --color-zinc-500: var(--vds-graphite-500);
+  --color-zinc-600: var(--vds-graphite-600); --color-zinc-700: var(--vds-graphite-700);
+  --color-zinc-800: var(--vds-graphite-800); --color-zinc-900: var(--vds-graphite-900);
+  --color-zinc-950: var(--vds-graphite-950);
+
+  --color-blue-50: var(--vds-azure-50);   --color-blue-100: var(--vds-azure-100);
+  --color-blue-200: var(--vds-azure-200); --color-blue-300: var(--vds-azure-300);
+  --color-blue-400: var(--vds-azure-400); --color-blue-500: var(--vds-azure-500);
+  --color-blue-600: var(--vds-azure-600); --color-blue-700: var(--vds-azure-700);
+  --color-blue-800: var(--vds-azure-800); --color-blue-900: var(--vds-azure-900);
+  --color-blue-950: var(--vds-azure-950);
+
+  --color-sky-50: var(--vds-azure-50);   --color-sky-100: var(--vds-azure-100);
+  --color-sky-200: var(--vds-azure-200); --color-sky-300: var(--vds-azure-300);
+  --color-sky-400: var(--vds-azure-400); --color-sky-500: var(--vds-azure-500);
+  --color-sky-600: var(--vds-azure-600); --color-sky-700: var(--vds-azure-700);
+  --color-sky-800: var(--vds-azure-800); --color-sky-900: var(--vds-azure-900);
+  --color-sky-950: var(--vds-azure-950);
+
+  --color-cyan-50: var(--vds-azure-50);   --color-cyan-100: var(--vds-azure-100);
+  --color-cyan-200: var(--vds-azure-200); --color-cyan-300: var(--vds-azure-300);
+  --color-cyan-400: var(--vds-azure-400); --color-cyan-500: var(--vds-azure-500);
+  --color-cyan-600: var(--vds-azure-600); --color-cyan-700: var(--vds-azure-700);
+  --color-cyan-800: var(--vds-azure-800); --color-cyan-900: var(--vds-azure-900);
+  --color-cyan-950: var(--vds-azure-950);
+
+  --color-violet-50: var(--vds-purple-50);   --color-violet-100: var(--vds-purple-100);
+  --color-violet-200: var(--vds-purple-200); --color-violet-300: var(--vds-purple-300);
+  --color-violet-400: var(--vds-purple-400); --color-violet-500: var(--vds-purple-500);
+  --color-violet-600: var(--vds-purple-600); --color-violet-700: var(--vds-purple-700);
+  --color-violet-800: var(--vds-purple-800); --color-violet-900: var(--vds-purple-900);
+  --color-violet-950: var(--vds-purple-950);
+
+  --color-indigo-50: var(--vds-purple-50);   --color-indigo-100: var(--vds-purple-100);
+  --color-indigo-200: var(--vds-purple-200); --color-indigo-300: var(--vds-purple-300);
+  --color-indigo-400: var(--vds-purple-400); --color-indigo-500: var(--vds-purple-500);
+  --color-indigo-600: var(--vds-purple-600); --color-indigo-700: var(--vds-purple-700);
+  --color-indigo-800: var(--vds-purple-800); --color-indigo-900: var(--vds-purple-900);
+  --color-indigo-950: var(--vds-purple-950);
+
+  --color-teal-50: var(--vds-emerald-50);   --color-teal-100: var(--vds-emerald-100);
+  --color-teal-200: var(--vds-emerald-200); --color-teal-300: var(--vds-emerald-300);
+  --color-teal-400: var(--vds-emerald-400); --color-teal-500: var(--vds-emerald-500);
+  --color-teal-600: var(--vds-emerald-600); --color-teal-700: var(--vds-emerald-700);
+  --color-teal-800: var(--vds-emerald-800); --color-teal-900: var(--vds-emerald-900);
+  --color-teal-950: var(--vds-emerald-950);
+}
+
+/* In dark mode the neutral *surfaces* should read navy (to match the shell), not grey,
+   so the zinc surface steps go to midnight instead of graphite. (More specific than the
+   block above, so it wins for these four steps in dark mode.) */
+html.dark .shell-customers {
+  --color-zinc-950: var(--vds-midnight-950);
+  --color-zinc-900: var(--vds-midnight-900);
+  --color-zinc-800: var(--vds-midnight-800);
+  --color-zinc-700: var(--vds-midnight-700);
+}
+
+/* Hide nav scrollbars so the active-bar margins stay symmetric. */
+.ob-scroll-dark, .ob-scroll-light { scrollbar-width: none; -ms-overflow-style: none; }
+.ob-scroll-dark::-webkit-scrollbar, .ob-scroll-light::-webkit-scrollbar { width: 0; height: 0; }
