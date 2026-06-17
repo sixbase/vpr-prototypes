@@ -8,11 +8,6 @@
 .obrow:not(.obrow--name):not([aria-current]):hover .obrow-pill { background: color-mix(in srgb, var(--vds-white) 10%, transparent); }
 .obrow--light:not([aria-current="page"]):hover .obrow-pill { background: color-mix(in srgb, var(--vds-ink) 7%, transparent); }
 
-/* Product headers in the Symphony menu: underline the name on hover (no bg bar),
-   keeping the icon column aligned with the breadcrumb mark. */
-.obrow--name:hover .obrow-label { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--vds-white) 55%, transparent); }
-.obrow-label { transition: text-decoration-color 120ms ease; }
-
 /* Symphony nav rows (Figma 48:6476). Base rules give a transparent rest bg (also
    kills the native <button> face) so the :hover rules can actually win — the row bg
    must NOT be set inline, or inline would override :hover. The active state owns its
@@ -22,9 +17,7 @@
 /* Full Portal only: the dim icon (midnight-600) transitions to white on row hover. */
 .ob-fp-icon { color: var(--vds-midnight-600); transition: color 120ms ease; }
 .ob-mrow:hover .ob-fp-icon { color: var(--vds-white); }
-.ob-mrow--name { transition: text-decoration-color 120ms ease; }
-.ob-mrow--name:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--vds-white) 50%, transparent); }
-.ob-phead:hover { background: var(--vds-midnight-800); }   /* product header pill hover = #152E51 */
+.ob-phead:hover { background: var(--vds-midnight-800); }   /* whole product-header pill highlights on hover = #152E51 */
 /* chevron circle is baked into the asset (a #0A192C disc) — it's invisible on the dark
    nav and reads automatically once the hover pill lightens to #152E51. No CSS circle. */
 
@@ -107,6 +100,13 @@ html.dark .shell-customers {
   --color-zinc-800: var(--vds-midnight-800);
   --color-zinc-700: var(--vds-midnight-700);
 }
+
+/* Body container (the content panel the cards sit in). Light mode keeps the DS canvas
+   (graphite-50). Dark mode deepens it to the darkest midnight-1000 so the cards
+   (midnight-900 surface) read as raised surfaces against it — like the white cards on
+   light-grey canvas in light mode. The surrounding chrome stays the brand midnight-950. */
+.shell-root { --shell-canvas: var(--vds-canvas); }
+html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 
 /* Hide nav scrollbars so the active-bar margins stay symmetric. */
 .ob-scroll-dark, .ob-scroll-light { scrollbar-width: none; -ms-overflow-style: none; }

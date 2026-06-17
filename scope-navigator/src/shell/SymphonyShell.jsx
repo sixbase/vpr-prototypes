@@ -12,7 +12,10 @@ import { mockData } from '../data'
 import { ProvisioningModal, SuccessToast } from '../ProvisioningModal'
 import CustomerManagementPageB from '../CustomerManagementPageB'
 import { PORTALS } from './portalData.js'
-// Exact locked-product tile illustrations + lock badge, pulled from Figma 48:6476.
+// Exact product tile illustrations + lock badge, pulled from Figma 48:6476.
+// Active products (IES/EDR) and locked products (SAT/Archive) ship their own SVG tile.
+import iesTile from './assets/ies-tile.svg'
+import edrTile from './assets/edr-tile.svg'
 import satTile from './assets/sat-tile.svg'
 import archiveTile from './assets/archive-tile.svg'
 import lockBadge from './assets/lock-badge.svg'
@@ -33,7 +36,7 @@ import './shell.css'
 const C = {
   topbar: 'var(--vds-midnight-950)',
   menu: 'var(--vds-midnight-950)',
-  menuBorder: 'var(--vds-midnight-900)',
+  menuBorder: 'var(--vds-midnight-1000)',   // left-nav outline = deepest ramp step
   tile: 'var(--vds-midnight-700)',       // product icon tile (Figma #1e3e6b)
   tileMuted: 'var(--vds-midnight-900)',  // Overview tile — darker (Figma #0f223d)
   white: 'var(--vds-white)',
@@ -48,7 +51,7 @@ const C = {
   portalBg: 'var(--vds-surface)',          // flips in dark mode
   portalInk: 'var(--vds-ink-muted)',
   portalEyebrow: 'var(--vds-ink-subtle)',
-  content: 'var(--vds-canvas)',            // recessed page bg, flips
+  content: 'var(--shell-canvas)',          // body container: canvas in light, deepest midnight-1000 in dark (see shell.css)
   card: 'var(--vds-surface)',
   line: 'var(--vds-line)',
 }
@@ -98,7 +101,7 @@ function layerStyle(role, slide) {
 
 /* ---- Data ---- */
 const PRODUCTS = [
-  { id: 'ies', label: 'IES', icon: Mail, items: [
+  { id: 'ies', label: 'IES', icon: Mail, tileAsset: iesTile, items: [
     { id: 'ies-logs', label: 'Message Logs', icon: ScrollText },
     { id: 'ies-threat', label: 'Threat Explorer', icon: Radar },
     { id: 'ies-config', label: 'Email Config', icon: Settings },
@@ -108,7 +111,7 @@ const PRODUCTS = [
     { id: 'ss-policies', label: 'Policies', icon: ShieldCheck },
     { id: 'ss-settings', label: 'Settings', icon: Settings },
   ] },
-  { id: 'edr', label: 'EDR', icon: Laptop, items: [
+  { id: 'edr', label: 'EDR', icon: Laptop, tileAsset: edrTile, items: [
     { id: 'edr-devices-s', label: 'Devices', icon: Monitor },
     { id: 'edr-incidents-s', label: 'Incidents', icon: Bell },
     { id: 'edr-settings-s', label: 'Settings', icon: Settings },
@@ -170,25 +173,28 @@ function MenuDivider() {
   return <div style={{ height: 1, width: '100%', background: C.divider, flexShrink: 0 }} />
 }
 
-// Product header: 32px brand tile + name + collapse chevron. Click the tile/name to
-// open the workspace; the chevron toggles the product's sub-pages. Locked products
-// show a lock badge and no chevron.
+// Product header: 32px brand tile + name + collapse chevron. The WHOLE pill is one
+// click target — it toggles the product's sub-pages (collapsible) or opens the
+// workspace (Overview tile). Locked products show a lock badge and no action.
 function ProductHeader({ product, Glyph, collapsed, open, onToggle, onOpen, tileBg = C.tile }) {
   const locked = product.locked
+  const action = locked ? undefined : (onToggle || onOpen)
+  const Tag = action ? 'button' : 'div'
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: collapsed ? 0 : '0 8px', width: '100%' }}>
-      <div className={locked ? undefined : 'ob-phead'}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 8, borderRadius: 5, width: collapsed ? 'auto' : SYM_W_EXPANDED - 16, transition: 'background-color 120ms ease' }}>
-        {/* clicking the name toggles collapse when the product is collapsible (onToggle);
-            otherwise it opens the item (Overview tile). Locked = no action. */}
-        <button type="button" onClick={locked ? undefined : (onToggle || onOpen)} className={locked ? undefined : 'ob-mrow--name'}
-          title={locked ? `${product.label} — not subscribed` : onToggle ? `${open ? 'Collapse' : 'Expand'} ${product.label}` : `Open ${product.label}`}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, border: 0, background: 'transparent', padding: 0, cursor: locked ? 'default' : 'pointer' }}>
+      <Tag
+        {...(action ? { type: 'button', onClick: action } : {})}
+        className={locked ? undefined : 'ob-phead'}
+        aria-expanded={onToggle ? open : undefined}
+        title={locked ? `${product.label} — not subscribed` : onToggle ? `${open ? 'Collapse' : 'Expand'} ${product.label}` : `Open ${product.label}`}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: 8, borderRadius: 5, width: collapsed ? 'auto' : SYM_W_EXPANDED - 16, border: 0, background: 'transparent', cursor: action ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', transition: 'background-color 120ms ease' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
           {product.tileAsset ? (
-            // locked: exact Figma tile illustration (muted #152E51 fill) + lock badge overlay
+            // exact Figma tile illustration (IES/EDR active; SAT/Archive locked).
+            // Locked tiles add a lock badge overlay.
             <span style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
               <img src={product.tileAsset} alt="" style={{ width: 32, height: 32, display: 'block' }} />
-              <img src={lockBadge} alt="" style={{ position: 'absolute', left: 20, top: 24, width: 16, height: 16 }} />
+              {locked && <img src={lockBadge} alt="" style={{ position: 'absolute', left: 20, top: 24, width: 16, height: 16 }} />}
             </span>
           ) : (
             <span style={{ width: 32, height: 32, borderRadius: 8, background: tileBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0px 0.5px 0.5px 0.5px rgba(0,0,0,0.05)' }}>
@@ -196,15 +202,14 @@ function ProductHeader({ product, Glyph, collapsed, open, onToggle, onOpen, tile
             </span>
           )}
           {!collapsed && <span style={{ fontSize: 14, fontWeight: 600, color: locked ? C.ink : C.white, whiteSpace: 'nowrap' }}>{product.label}</span>}
-        </button>
+        </span>
         {!collapsed && !locked && onToggle && (
-          <button type="button" onClick={onToggle} aria-label={open ? `Collapse ${product.label}` : `Expand ${product.label}`}
-            className="ob-chev" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, border: 0, background: 'transparent', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
-            {/* exact Figma chevron — white glyph in a #0A192C circle that only reads on the hover pill */}
+          // chevron is visual only — the whole pill is the toggle.
+          <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, flexShrink: 0 }}>
             <img src={chevronAsset} alt="" style={{ width: 24, height: 24, display: 'block', transform: open ? 'none' : 'rotate(180deg)', transition: 'transform 150ms ease' }} />
-          </button>
+          </span>
         )}
-      </div>
+      </Tag>
     </div>
   )
 }
@@ -569,14 +574,14 @@ function ShellInner() {
   const params = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: C.topbar, overflow: 'hidden', fontFamily: 'var(--vds-font-sans)' }}>
+    <div className="shell-root" style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: C.topbar, overflow: 'hidden', fontFamily: 'var(--vds-font-sans)' }}>
       {/* Global bar: VIPRE mark in the brand/home position (toy-box-1 treatment),
           then the real scope breadcrumb. One logo only — the breadcrumb root uses a
           neutral icon. The mark doubles as "back to Symphony" (home). The bar is
           scoped `.dark` so the DS ScopeNavigator renders its product-navy chrome in
           BOTH themes — matching the always-navy Symphony left nav (canvas under .dark
           = midnight-950 = the Symphony menu bg exactly). */}
-      <div className="dark" style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, background: 'var(--vds-canvas)', borderBottom: '1px solid var(--vds-line)' }}>
+      <div className="dark" style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, background: 'var(--vds-canvas)', borderBottom: '1px solid var(--vds-midnight-1000)' }}>
         <button type="button" onClick={goHome} title="Symphony home" aria-label="Symphony home"
           /* paddingLeft 11px centers the 26px mark on x=24 — the same axis as the
              Symphony left-nav icons (SYM_PAD 8 + SYM_GUTTER 32 / 2). */
