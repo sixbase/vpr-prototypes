@@ -17,9 +17,21 @@
 /* Full Portal only: the dim icon (midnight-600) transitions to white on row hover. */
 .ob-fp-icon { color: var(--vds-midnight-600); transition: color 120ms ease; }
 .ob-mrow:hover .ob-fp-icon { color: var(--vds-white); }
-.ob-phead:hover { background: var(--vds-midnight-800); }   /* whole product-header pill highlights on hover = #152E51 */
-/* chevron circle is baked into the asset (a #0A192C disc) — it's invisible on the dark
-   nav and reads automatically once the hover pill lightens to #152E51. No CSS circle. */
+/* Product cards: the header pill itself stays flat; only the chevron's 24px container
+   reacts on hover (per Figma 53:8494). Rest: transparent container, #3d68a4 arrow.
+   Hover: container fills #152E51, arrow goes white. */
+.ob-chevc { background: transparent; color: #3d68a4; transition: background-color 120ms ease, color 120ms ease; }
+.ob-phead:hover .ob-chevc { background: var(--vds-midnight-800); color: var(--vds-white); }
+
+/* Card-less standalone Overview button: rest transparent, hover #152E51, active #0068cb
+   (Figma 53:8508). Driven by classes so :hover isn't beaten by an inline bg. */
+.ob-phead--bare { transition: background-color 120ms ease; }
+.ob-phead--bare:not(.ob-phead--sel):hover { background: var(--vds-midnight-800); }
+.ob-phead--sel { background: #0068cb; }
+
+/* Placeholder page-header buttons (Figma 53:8072): primary azure, slight darken on hover. */
+.ob-hbtn { transition: background-color 120ms ease; }
+.ob-hbtn:hover { background: color-mix(in srgb, #0068cb 88%, black) !important; }
 
 /* Product switcher reads as a dropdown control: a clearer hover than the nav rows,
    and it stays lit while the menu is open. (Same specificity as the generic
