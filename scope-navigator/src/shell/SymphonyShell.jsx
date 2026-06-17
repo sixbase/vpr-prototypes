@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from 'react'
 import {
   Mail, Send, Laptop, GraduationCap, Database, ScrollText, Radar, Settings,
   FileText, ShieldCheck, Monitor, Bell, UserCog, User, ArrowUpRight,
-  ChevronDown, ChevronLeft, Check, PanelLeftClose, PanelLeftOpen,
-  LayoutDashboard, Plus, Moon, Sun, Building2, Network, Briefcase, Boxes,
-} from 'lucide-react'
+  ChevronDown, ChevronUp, ChevronLeft, Check, PanelLeftClose, PanelLeftOpen,
+  LayoutDashboard, Plus, Moon, Sun, Building2, Network, Briefcase, Boxes, Lock,
+} from '@icons'
 import { ScopeProvider, useScope } from '../ScopeContext'
 import { ScopeNavigator } from '../vds/components/index.js'
 import { VipreMark } from '../config'
@@ -12,6 +12,11 @@ import { mockData } from '../data'
 import { ProvisioningModal, SuccessToast } from '../ProvisioningModal'
 import CustomerManagementPageB from '../CustomerManagementPageB'
 import { PORTALS } from './portalData.js'
+// Exact locked-product tile illustrations + lock badge, pulled from Figma 48:6476.
+import satTile from './assets/sat-tile.svg'
+import archiveTile from './assets/archive-tile.svg'
+import lockBadge from './assets/lock-badge.svg'
+import chevronAsset from './assets/chevron.svg' // white chevron in a #0A192C circle (shows on hover)
 import './shell.css'
 
 /* ============================================================================
@@ -29,12 +34,17 @@ const C = {
   topbar: 'var(--vds-midnight-950)',
   menu: 'var(--vds-midnight-950)',
   menuBorder: 'var(--vds-midnight-900)',
-  tile: 'var(--vds-midnight-700)',       // product icon tile — tonal lift off the 950 bar
+  tile: 'var(--vds-midnight-700)',       // product icon tile (Figma #1e3e6b)
+  tileMuted: 'var(--vds-midnight-900)',  // Overview tile — darker (Figma #0f223d)
   white: 'var(--vds-white)',
-  ink: 'var(--vds-graphite-300)',          // light text on navy
-  inkDim: 'var(--vds-graphite-400)',
-  selected: 'var(--vds-azure-500)',  // active pill — vivid DS blue that pops on the navy
-  onSelected: 'var(--vds-white)',    // white reads on azure-500 in both themes (fixed ramp)
+  ink: 'var(--vds-midnight-200)',          // nav text on navy (Figma #c4d6ed)
+  inkDim: 'var(--vds-midnight-300)',       // dim / Full-Portal text (Figma #98b6dd)
+  icon: 'var(--vds-midnight-400)',         // nav icon glyphs (Figma #618bc2)
+  iconDim: 'var(--vds-midnight-600)',      // dim / Full-Portal icon (Figma #2b5288)
+  navHover: 'var(--vds-midnight-900)',     // row hover lift (Figma #0f223d)
+  divider: 'var(--vds-midnight-800)',      // section divider (Figma #152e51)
+  selected: '#0068cb',               // ACTIVE state — exact Figma blue; NOT a DS palette token (flagged)
+  onSelected: 'var(--vds-white)',    // white icon + text on the active blue
   portalBg: 'var(--vds-surface)',          // flips in dark mode
   portalInk: 'var(--vds-ink-muted)',
   portalEyebrow: 'var(--vds-ink-subtle)',
@@ -46,7 +56,8 @@ const C = {
 const SYM_GUTTER = 32
 const SYM_PAD = 8
 const SYM_W_COLLAPSED = SYM_GUTTER + SYM_PAD * 2
-const SYM_W_EXPANDED = 176
+const SYM_W_EXPANDED = 210
+const NAV_PAD_X = 16   // section horizontal padding (Figma px-16)
 
 const POR_PAD = 32
 const POR_W_COLLAPSED = 56
@@ -102,44 +113,99 @@ const PRODUCTS = [
     { id: 'edr-incidents-s', label: 'Incidents', icon: Bell },
     { id: 'edr-settings-s', label: 'Settings', icon: Settings },
   ] },
-  { id: 'sat', label: 'SAT', icon: GraduationCap, locked: true },
-  { id: 'archive', label: 'Archive', icon: Database, locked: true },
+  { id: 'sat', label: 'SAT', icon: GraduationCap, locked: true, tileAsset: satTile },
+  { id: 'archive', label: 'Archive', icon: Database, locked: true, tileAsset: archiveTile },
 ]
 const FOOTER = [
   { id: 'logs', label: 'Logs', icon: ScrollText },
   { id: 'admins', label: 'Admins', icon: UserCog },
   { id: 'profile', label: 'Profile', icon: User },
 ]
+// PARTNERS group at the top of the nav (Figma 48:6476). Each opens a Symphony page.
+const PARTNERS = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'customers', label: 'Customers', icon: Building2 },
+]
+// Standalone "Overview" tile that opens the PRODUCTS group (no sub-pages, muted tile).
+const PRODUCTS_OVERVIEW = { id: 'products-overview', label: 'Overview', icon: Boxes }
 const FIRST_SYM_ITEM = Object.fromEntries(PRODUCTS.filter((p) => p.items?.length).map((p) => [p.id, p.items[0].id]))
 
-/* ---- Shared Symphony row (dark) ---- */
-function Row({ gutter, icon, label, labelSize = 12, labelWeight = 500, ink, selected, collapsed, onClick, ariaCurrent, title, nameHover, height = 30 }) {
+/* ---- Symphony nav rows (dark) — Figma 48:6476 ---- */
+// Generic row: 16px icon + label in a full-width rounded pill. Transparent at rest,
+// midnight-900 on hover, azure when selected. Collapses to a centered icon.
+function MenuItem({ icon, label, labelSize = 12, labelWeight = 500, color, iconColor = C.icon, fp, selected, onClick, collapsed, ariaCurrent, title }) {
   const Tag = onClick ? 'button' : 'div'
-  const cls = onClick ? ['obrow', nameHover && 'obrow--name'].filter(Boolean).join(' ') : undefined
   return (
     <Tag
       {...(onClick ? { type: 'button', onClick } : {})}
-      className={cls} aria-current={ariaCurrent} title={title}
+      aria-current={ariaCurrent} title={title}
+      className={['ob-mrow', selected && 'ob-mrow--sel'].filter(Boolean).join(' ')}
       style={{
-        display: 'flex', alignItems: 'center', width: '100%',
-        padding: `1px ${SYM_PAD}px`, border: 0, background: 'transparent', textAlign: 'left', fontFamily: 'inherit',
-        cursor: onClick ? 'pointer' : 'default', color: selected ? C.onSelected : ink,
+        display: 'flex', alignItems: 'center', gap: 8, width: '100%', borderRadius: 5, border: 0,
+        padding: collapsed ? `8px ${(SYM_W_COLLAPSED - 16) / 2}px` : '8px 12px 8px 8px',
+        background: selected ? C.selected : undefined,   // NOT 'transparent' — inline would override :hover
+        cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', transition: 'background-color 120ms ease',
       }}
     >
-      <span className="obrow-pill" style={{
-        display: 'flex', flex: 1, minWidth: 0, alignItems: 'center', height, borderRadius: 6,
-        paddingRight: collapsed ? 0 : 10,
-        transition: `padding 220ms ${OB_EASE}, background-color 120ms ease`,
-        ...(selected ? { background: C.selected } : {}),
-      }}>
-        <span style={{ width: gutter, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
-        <span className="obrow-label" style={{
-          maxWidth: collapsed ? 0 : 160, marginLeft: collapsed ? 0 : 8, opacity: collapsed ? 0 : 1, minWidth: 0,
-          overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontSize: labelSize, fontWeight: labelWeight,
-          transition: `max-width 220ms ${OB_EASE}, margin-left 220ms ${OB_EASE}, opacity 150ms ease`,
-        }}>{label}</span>
-      </span>
+      {/* icon glyph (Figma #618bc2 = midnight-400) is a different color than the label.
+          For Full Portal, color is left to CSS (.ob-fp-icon) so it can transition to white on hover. */}
+      <span className={fp ? 'ob-fp-icon' : undefined}
+        style={{ width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: fp ? undefined : (selected ? C.white : iconColor) }}>{icon}</span>
+      <span style={{
+        color: selected ? C.white : color,
+        maxWidth: collapsed ? 0 : 200, opacity: collapsed ? 0 : 1, minWidth: 0,
+        overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontSize: labelSize, fontWeight: labelWeight,
+        transition: `max-width 220ms ${OB_EASE}, opacity 150ms ease`,
+      }}>{label}</span>
     </Tag>
+  )
+}
+
+function Eyebrow({ collapsed, children }) {
+  if (collapsed) return null
+  return <p style={{ margin: 0, fontSize: 10, fontWeight: 400, letterSpacing: '1px', color: C.ink, whiteSpace: 'nowrap' }}>{children}</p>
+}
+
+function MenuDivider() {
+  return <div style={{ height: 1, width: '100%', background: C.divider, flexShrink: 0 }} />
+}
+
+// Product header: 32px brand tile + name + collapse chevron. Click the tile/name to
+// open the workspace; the chevron toggles the product's sub-pages. Locked products
+// show a lock badge and no chevron.
+function ProductHeader({ product, Glyph, collapsed, open, onToggle, onOpen, tileBg = C.tile }) {
+  const locked = product.locked
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: collapsed ? 0 : '0 8px', width: '100%' }}>
+      <div className={locked ? undefined : 'ob-phead'}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 8, borderRadius: 5, width: collapsed ? 'auto' : SYM_W_EXPANDED - 16, transition: 'background-color 120ms ease' }}>
+        {/* clicking the name toggles collapse when the product is collapsible (onToggle);
+            otherwise it opens the item (Overview tile). Locked = no action. */}
+        <button type="button" onClick={locked ? undefined : (onToggle || onOpen)} className={locked ? undefined : 'ob-mrow--name'}
+          title={locked ? `${product.label} — not subscribed` : onToggle ? `${open ? 'Collapse' : 'Expand'} ${product.label}` : `Open ${product.label}`}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, border: 0, background: 'transparent', padding: 0, cursor: locked ? 'default' : 'pointer' }}>
+          {product.tileAsset ? (
+            // locked: exact Figma tile illustration (muted #152E51 fill) + lock badge overlay
+            <span style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
+              <img src={product.tileAsset} alt="" style={{ width: 32, height: 32, display: 'block' }} />
+              <img src={lockBadge} alt="" style={{ position: 'absolute', left: 20, top: 24, width: 16, height: 16 }} />
+            </span>
+          ) : (
+            <span style={{ width: 32, height: 32, borderRadius: 8, background: tileBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0px 0.5px 0.5px 0.5px rgba(0,0,0,0.05)' }}>
+              <Glyph size={18} style={{ color: C.white }} />
+            </span>
+          )}
+          {!collapsed && <span style={{ fontSize: 14, fontWeight: 600, color: locked ? C.ink : C.white, whiteSpace: 'nowrap' }}>{product.label}</span>}
+        </button>
+        {!collapsed && !locked && onToggle && (
+          <button type="button" onClick={onToggle} aria-label={open ? `Collapse ${product.label}` : `Expand ${product.label}`}
+            className="ob-chev" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, border: 0, background: 'transparent', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
+            {/* exact Figma chevron — white glyph in a #0A192C circle that only reads on the hover pill */}
+            <img src={chevronAsset} alt="" style={{ width: 24, height: 24, display: 'block', transform: open ? 'none' : 'rotate(180deg)', transition: 'transform 150ms ease' }} />
+          </button>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -177,56 +243,82 @@ function PortalRow({ iconSize = 16, icon, label, labelSize = 12, labelWeight = 5
   )
 }
 
-/* ====================== Symphony menu (dark) ====================== */
-function SymphonyMenu({ collapsed, page, onSelectItem, onOpenWorkspace, onToggleCollapse, dark, onToggleDark, onAddCustomer }) {
+/* ====================== Symphony menu (dark) — Figma 48:6476 ====================== */
+function SymphonyMenu({ collapsed, page, onSelectItem, onOpenWorkspace, onToggleCollapse, dark, onToggleDark }) {
+  // Per-product section collapse — products start expanded.
+  const [openIds, setOpenIds] = useState(() => Object.fromEntries(PRODUCTS.filter((p) => !p.locked).map((p) => [p.id, true])))
+  const toggle = (id) => setOpenIds((o) => ({ ...o, [id]: !o[id] }))
+  const px = collapsed ? 0 : NAV_PAD_X
+
   return (
     <nav style={{
       width: collapsed ? SYM_W_COLLAPSED : SYM_W_EXPANDED, flexShrink: 0, background: C.menu,
-      borderRight: `1px solid ${C.menuBorder}`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+      borderRight: `1px solid ${C.menuBorder}`, display: 'flex', flexDirection: 'column',
       fontFamily: 'var(--vds-font-sans)', transition: `width 220ms ${OB_EASE}`,
     }}>
-      <div className="ob-scroll-dark" style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 0', overflowY: 'auto', overflowX: 'hidden' }}>
-        <Row gutter={SYM_GUTTER} ink={C.ink} collapsed={collapsed} label="Customers"
-          selected={page === 'customers'} ariaCurrent={page === 'customers' ? 'page' : undefined}
-          onClick={() => onSelectItem('customers')} icon={<Building2 size={16} />} />
-        {PRODUCTS.map((p) => {
-          const Glyph = p.icon
-          return (
-            <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '2px 0' }}>
-              <Row
-                gutter={SYM_GUTTER} height={40} ink={C.white} labelSize={14} labelWeight={500} collapsed={collapsed} label={p.label}
-                onClick={p.locked ? undefined : () => onOpenWorkspace(p.id)} nameHover
-                title={p.locked ? undefined : `Open ${p.label} workspace`}
-                icon={<span style={{ width: 32, height: 32, borderRadius: 8, background: C.tile, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Glyph size={18} style={{ color: C.white }} /></span>}
-              />
-              {!p.locked && p.items.map((it) => {
-                const Icon = it.icon
-                return (
-                  <Row key={it.id} gutter={SYM_GUTTER} ink={C.ink} collapsed={collapsed} label={it.label}
-                    selected={page === it.id} ariaCurrent={page === it.id ? 'page' : undefined}
-                    onClick={() => onSelectItem(it.id)} icon={<Icon size={16} />} />
-                )
-              })}
-              {!p.locked && (
-                <Row gutter={SYM_GUTTER} ink={C.inkDim} collapsed={collapsed} label="Open Workspace"
-                  onClick={() => onOpenWorkspace(p.id)} icon={<ArrowUpRight size={16} />} />
-              )}
-            </div>
-          )
-        })}
-      </div>
-      <div style={{ flexShrink: 0, paddingBottom: 8 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '12px 0' }}>
-          <Row gutter={SYM_GUTTER} ink={C.ink} collapsed={collapsed} label="Add Customer" onClick={onAddCustomer} icon={<Plus size={16} />} />
-          {FOOTER.map((f) => {
-            const Icon = f.icon
-            return <Row key={f.id} gutter={SYM_GUTTER} ink={C.ink} collapsed={collapsed} label={f.label} icon={<Icon size={16} />} />
-          })}
-          <Row gutter={SYM_GUTTER} ink={C.ink} collapsed={collapsed} label={dark ? 'Light mode' : 'Dark mode'}
-            onClick={onToggleDark} icon={dark ? <Sun size={16} /> : <Moon size={16} />} />
+      <div className="ob-scroll-dark" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0, padding: 0, overflowY: 'auto', overflowX: 'hidden' }}>
+        {/* PARTNERS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: `8px ${px}px` }}>
+          <Eyebrow collapsed={collapsed}>PARTNERS</Eyebrow>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {PARTNERS.map((it) => (
+              <MenuItem key={it.id} collapsed={collapsed} icon={<it.icon size={16} />} label={it.label} color={C.ink}
+                selected={page === it.id} ariaCurrent={page === it.id ? 'page' : undefined} onClick={() => onSelectItem(it.id)} />
+            ))}
+          </div>
         </div>
-        <Row gutter={SYM_GUTTER} ink={C.ink} collapsed={collapsed} label="Collapse" onClick={onToggleCollapse}
-          icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />} />
+
+        <MenuDivider />
+
+        {/* PRODUCTS */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {!collapsed && <div style={{ padding: `16px ${NAV_PAD_X}px 0` }}><Eyebrow collapsed={collapsed}>PRODUCTS</Eyebrow></div>}
+          {/* standalone Overview tile (muted tile, no sub-pages) */}
+          <div style={{ padding: '4px 0' }}>
+            <ProductHeader product={PRODUCTS_OVERVIEW} Glyph={PRODUCTS_OVERVIEW.icon} collapsed={collapsed}
+              tileBg={C.tileMuted} onOpen={() => onSelectItem(PRODUCTS_OVERVIEW.id)} />
+          </div>
+          {PRODUCTS.map((p) => {
+            const Glyph = p.icon
+            if (p.locked) {
+              return <ProductHeader key={p.id} product={p} Glyph={Glyph} collapsed={collapsed} />
+            }
+            const open = openIds[p.id]
+            return (
+              <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <ProductHeader product={p} Glyph={Glyph} collapsed={collapsed} open={open}
+                  onToggle={() => toggle(p.id)} onOpen={() => onOpenWorkspace(p.id)} />
+                {open && !collapsed && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, padding: `0 ${NAV_PAD_X}px` }}>
+                    {p.items.map((it) => (
+                      <MenuItem key={it.id} collapsed={collapsed} icon={<it.icon size={16} />} label={it.label} labelSize={13} color={C.ink}
+                        selected={page === it.id} ariaCurrent={page === it.id ? 'page' : undefined} onClick={() => onSelectItem(it.id)} />
+                    ))}
+                    <MenuItem collapsed={collapsed} icon={<ArrowUpRight size={16} />} label="Full Portal" labelSize={11} labelWeight={400} color={C.inkDim} fp onClick={() => onOpenWorkspace(p.id)} />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <MenuDivider />
+
+        {/* OTHER */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: `8px ${px}px` }}>
+          <Eyebrow collapsed={collapsed}>OTHER</Eyebrow>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {FOOTER.map((f) => (
+              <MenuItem key={f.id} collapsed={collapsed} icon={<f.icon size={16} />} label={f.label} color={C.ink} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* pinned bottom: dark-mode toggle (functional, not in Figma) + collapse */}
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', padding: `8px ${px}px` }}>
+        <MenuItem collapsed={collapsed} icon={dark ? <Sun size={16} /> : <Moon size={16} />} label={dark ? 'Light mode' : 'Dark mode'} color={C.ink} onClick={onToggleDark} />
+        <MenuItem collapsed={collapsed} icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />} label="Collapse" color={C.ink} onClick={onToggleCollapse} />
       </div>
     </nav>
   )
@@ -354,11 +446,15 @@ function ContentCard({ page, style }) {
 const cardStyle = { flex: 1, minWidth: 0, background: C.card, border: `1px solid ${C.line}`, borderRadius: 8 }
 
 function labelOf(id) {
+  const partner = PARTNERS.find((p) => p.id === id)
+  if (partner) return partner.label
   for (const p of PRODUCTS) for (const it of p.items || []) if (it.id === id) return it.label
   for (const key in PORTALS) for (const s of PORTALS[key].sections) for (const it of s.items) if (it.id === id) return it.label
   return 'Overview'
 }
 function iconOf(id) {
+  const partner = PARTNERS.find((p) => p.id === id)
+  if (partner) return partner.icon
   for (const p of PRODUCTS) for (const it of p.items || []) if (it.id === id) return it.icon
   for (const key in PORTALS) for (const s of PORTALS[key].sections) for (const it of s.items) if (it.id === id) return it.icon
   return LayoutDashboard
@@ -484,7 +580,8 @@ function ShellInner() {
         <button type="button" onClick={goHome} title="Symphony home" aria-label="Symphony home"
           /* paddingLeft 11px centers the 26px mark on x=24 — the same axis as the
              Symphony left-nav icons (SYM_PAD 8 + SYM_GUTTER 32 / 2). */
-          style={{ display: 'flex', alignItems: 'center', paddingLeft: 11, paddingRight: 'var(--vds-space-3)', border: 0, background: 'transparent', cursor: 'pointer', color: C.white }}>
+          /* paddingLeft 19 centers the 26px mark on x=32 — the Symphony nav icon column (Figma 48:6476). */
+          style={{ display: 'flex', alignItems: 'center', paddingLeft: 19, paddingRight: 'var(--vds-space-3)', border: 0, background: 'transparent', cursor: 'pointer', color: C.white }}>
           <VipreMark width={26} style={{ display: 'block' }} />
         </button>
         <ScopeNavigator

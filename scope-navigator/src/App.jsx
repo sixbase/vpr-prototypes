@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Moon, Sun, Zap, Menu, X, Building2, Network, Briefcase, Monitor, Laptop, ShieldAlert, SlidersHorizontal, ScrollText, BarChart3, ListChecks, Globe, FileText, Users, Cog, Wrench, Settings } from 'lucide-react';
+import { Moon, Sun, Zap, Menu, X, Building2, Network, Briefcase, Monitor, Laptop, ShieldAlert, SlidersHorizontal, ScrollText, BarChart3, ListChecks, Globe, FileText, Users, Cog, Wrench, Settings } from '@icons';
 import { ScopeProvider, useScope } from './ScopeContext';
 import { ScopeNavigator, SideNav } from './vds/components/index.js';
 import { VipreMark, VipreWordmark } from './config';

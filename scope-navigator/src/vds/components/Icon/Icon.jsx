@@ -18,7 +18,7 @@ import { cx } from '../../lib/cx.js'
  *          otherwise it is aria-hidden (decorative).
  *
  * @example
- * import { Shield } from 'lucide-react'
+ * import { Shield } from '@icons'
  * <Icon as={Shield} size="sm" tone="success" label="Protected" />
  * <Icon as={ChevronRight} />            // decorative, inherits color
  */

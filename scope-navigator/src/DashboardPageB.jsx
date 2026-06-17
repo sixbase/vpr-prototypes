@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, Fragment } from 'react';
-import { Building2, ArrowLeft, ArrowUpRight, ChevronRight } from 'lucide-react';
+import { Building2, ArrowLeft, ArrowUpRight, ChevronRight } from '@icons';
 import { useScope } from './ScopeContext';
 import { mockData, genCustomerPackages, genPartnerPackages, findEntityById, buildRootAggregateEntity } from './data';
 import { typeConfig, pkgIconMap, defaultPkgIcon, EntityTypeIcon } from './config';

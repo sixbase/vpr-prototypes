@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Search, ArrowUpDown, Filter, X, Check, MoreHorizontal, Zap } from 'lucide-react';
+import { ChevronRight, ChevronDown, Search, ArrowUpDown, Filter, X, Check, MoreHorizontal, Zap } from '@icons';
 import { typeConfig, statusConfig, StatusBadge, TypeBadge, sortOptions, applySorting, getDisplayType } from './config';
 import { mockData, getSiblingsAtLevel } from './data';
 import useClickOutside from './useClickOutside';

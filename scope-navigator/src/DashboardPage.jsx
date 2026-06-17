@@ -3,7 +3,7 @@ import {
   Building2, Monitor, Shield, Activity,
   Package, Mail, Send, ShieldCheck, Bug, Globe, Cloud, Key, ScanSearch, Clock, Paperclip,
   MapPin, Phone, User, Network,
-} from 'lucide-react';
+} from '@icons';
 import { useScope } from './ScopeContext';
 import { collectDevicesInScope, computeDeviceStats, collectPackageAdoption, mockData } from './data';
 import { typeConfig, statusConfig, pkgIconMap, defaultPkgIcon, isPartner, isLeaf } from './config';

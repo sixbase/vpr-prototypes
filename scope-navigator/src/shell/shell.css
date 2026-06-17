@@ -13,6 +13,21 @@
 .obrow--name:hover .obrow-label { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--vds-white) 55%, transparent); }
 .obrow-label { transition: text-decoration-color 120ms ease; }
 
+/* Symphony nav rows (Figma 48:6476). Base rules give a transparent rest bg (also
+   kills the native <button> face) so the :hover rules can actually win — the row bg
+   must NOT be set inline, or inline would override :hover. The active state owns its
+   azure bg inline (and is excluded from hover via :not). */
+.ob-mrow, .ob-chev, .ob-phead { background: transparent; font: inherit; }
+.ob-mrow:not(.ob-mrow--sel):hover { background: var(--vds-midnight-800); }   /* hover = #152E51 */
+/* Full Portal only: the dim icon (midnight-600) transitions to white on row hover. */
+.ob-fp-icon { color: var(--vds-midnight-600); transition: color 120ms ease; }
+.ob-mrow:hover .ob-fp-icon { color: var(--vds-white); }
+.ob-mrow--name { transition: text-decoration-color 120ms ease; }
+.ob-mrow--name:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--vds-white) 50%, transparent); }
+.ob-phead:hover { background: var(--vds-midnight-800); }   /* product header pill hover = #152E51 */
+/* chevron circle is baked into the asset (a #0A192C disc) — it's invisible on the dark
+   nav and reads automatically once the hover pill lightens to #152E51. No CSS circle. */
+
 /* Product switcher reads as a dropdown control: a clearer hover than the nav rows,
    and it stays lit while the menu is open. (Same specificity as the generic
    obrow--light hover above, so it wins on source order.) */

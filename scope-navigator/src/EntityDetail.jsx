@@ -5,7 +5,7 @@ import {
   Trash2, Paperclip, UserCheck, Plus, Copy, Search, X, Cloud,
   Fingerprint, Check, TrendingUp, TrendingDown, AlertCircle, Settings,
   Activity, Target, Zap, BarChart3, Info, MapPin, Phone, User, Languages, ArrowLeft, ArrowUpRight, EyeOff, CaptionsOff, Loader2, Package
-} from 'lucide-react';
+} from '@icons';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, ResponsiveContainer,
   XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell

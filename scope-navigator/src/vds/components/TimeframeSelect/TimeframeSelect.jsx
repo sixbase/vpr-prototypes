@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { Calendar, ChevronDown, Check } from 'lucide-react'
+import { Calendar, ChevronDown, Check } from '@icons'
 import { cx } from '../../lib/cx.js'
 import { Icon } from '../Icon/Icon.jsx'
 import { Input } from '../Input/Input.jsx'

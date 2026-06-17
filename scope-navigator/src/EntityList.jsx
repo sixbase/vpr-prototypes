@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { Search, ArrowUpDown, Filter, X, Users, Plus, CaptionsOff } from 'lucide-react';
+import { Search, ArrowUpDown, Filter, X, Users, Plus, CaptionsOff } from '@icons';
 import { typeConfig, statusConfig, StatusBadge, entityTypeOrder, sortOptions, applySorting, isEntityUnmanaged, managementModeConfig } from './config';
 import useClickOutside from './useClickOutside';
 import { flattenFrom } from './data';

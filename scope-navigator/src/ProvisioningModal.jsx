@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   X, CheckCircle, ChevronRight, ChevronDown, Check, Shield, ShieldCheck, Mail,
   Send, ArrowLeft, Minus, Cloud, Globe, Lock, Building2, Users, Bug
-} from 'lucide-react';
+} from '@icons';
 import { typeConfig } from './config';
 
 // ── Constants ──────────────────────────────────────────────────────────────────

@@ -9,7 +9,7 @@ import {
   FileText, ShieldCheck,
   Home, MessageSquare, Users, Send, Megaphone, ListChecks,
   MousePointer2, AppWindow, Mail, UserCheck, Languages,
-} from 'lucide-react'
+} from '@icons'
 
 export const PORTALS = {
   edr: {

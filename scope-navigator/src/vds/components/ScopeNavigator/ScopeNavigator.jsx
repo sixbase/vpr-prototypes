@@ -19,7 +19,7 @@ import {
   X,
   Check,
   MoreHorizontal,
-} from 'lucide-react'
+} from '@icons'
 import { cx } from '../../lib/cx.js'
 import { Surface } from '../Surface/Surface.jsx'
 import { Icon } from '../Icon/Icon.jsx'

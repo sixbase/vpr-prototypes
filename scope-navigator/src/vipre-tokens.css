@@ -1,8 +1,3 @@
-/* Vendored from vipre-design-system dist/vipre-tokens.css (build:tokens output).
-   Snapshot copied in so the Pages build is self-contained — it no longer
-   depends on the sibling design-system repo at build time. Re-copy after
-   changing DS tokens: (cd ../../vipre-design-system && npm run build:tokens)
-   then copy dist/vipre-tokens.css over this file. */
 :root {
   --vds-graphite-50: #f7f8fa;
   --vds-graphite-100: #eff1f5;
@@ -15,6 +10,7 @@
   --vds-graphite-800: #262c36;
   --vds-graphite-900: #161b22;
   --vds-graphite-950: #0d1117;
+  --vds-graphite-1000: #05080d;
   --vds-midnight-50: #f3f7fc;
   --vds-midnight-100: #e3ecf7;
   --vds-midnight-200: #c4d6ed;
@@ -26,6 +22,7 @@
   --vds-midnight-800: #152e51;
   --vds-midnight-900: #0f223d;
   --vds-midnight-950: #0b192d;
+  --vds-midnight-1000: #07101f;
   --vds-rose-50: #fff4f3;
   --vds-rose-100: #fee4e1;
   --vds-rose-200: #ffccc7;
@@ -37,6 +34,7 @@
   --vds-rose-800: #742423;
   --vds-rose-900: #571c1a;
   --vds-rose-950: #3f1513;
+  --vds-rose-1000: #290d0c;
   --vds-clay-50: #fff5ee;
   --vds-clay-100: #ffe6d6;
   --vds-clay-200: #ffcfb0;
@@ -48,6 +46,7 @@
   --vds-clay-800: #693200;
   --vds-clay-900: #502502;
   --vds-clay-950: #3b1a01;
+  --vds-clay-1000: #271002;
   --vds-amber-50: #fff6e7;
   --vds-amber-100: #fbe9ca;
   --vds-amber-200: #f6d59f;
@@ -59,6 +58,7 @@
   --vds-amber-800: #593e03;
   --vds-amber-900: #432e02;
   --vds-amber-950: #322100;
+  --vds-amber-1000: #211500;
   --vds-lime-50: #f3f9ed;
   --vds-lime-100: #e4f1d5;
   --vds-lime-200: #cde4b2;
@@ -70,6 +70,7 @@
   --vds-lime-800: #354c08;
   --vds-lime-900: #273906;
   --vds-lime-950: #1c2a05;
+  --vds-lime-1000: #111b02;
   --vds-emerald-50: #edfbf0;
   --vds-emerald-100: #d6f4dd;
   --vds-emerald-200: #b4eac1;
@@ -81,6 +82,7 @@
   --vds-emerald-800: #025227;
   --vds-emerald-900: #023e1c;
   --vds-emerald-950: #022d13;
+  --vds-emerald-1000: #031d0c;
   --vds-harbor-50: #e7fcf9;
   --vds-harbor-100: #cbf6ef;
   --vds-harbor-200: #9eebe1;
@@ -92,6 +94,7 @@
   --vds-harbor-800: #044f48;
   --vds-harbor-900: #003b36;
   --vds-harbor-950: #002c27;
+  --vds-harbor-1000: #001c19;
   --vds-azure-50: #f0f8fe;
   --vds-azure-100: #d7efff;
   --vds-azure-200: #b4e1fe;
@@ -103,6 +106,19 @@
   --vds-azure-800: #014969;
   --vds-azure-900: #013750;
   --vds-azure-950: #00283c;
+  --vds-azure-1000: #001a28;
+  --vds-cobalt-50: #eaf3ff;
+  --vds-cobalt-100: #d7e8ff;
+  --vds-cobalt-200: #bad8ff;
+  --vds-cobalt-300: #93c2ff;
+  --vds-cobalt-400: #5fa4fc;
+  --vds-cobalt-500: #2085f4;
+  --vds-cobalt-600: #0068cb;
+  --vds-cobalt-700: #0252a1;
+  --vds-cobalt-800: #013e7d;
+  --vds-cobalt-900: #022e5e;
+  --vds-cobalt-950: #002046;
+  --vds-cobalt-1000: #00132e;
   --vds-purple-50: #f7f5ff;
   --vds-purple-100: #ede7ff;
   --vds-purple-200: #ddd3ff;
@@ -114,6 +130,7 @@
   --vds-purple-800: #493770;
   --vds-purple-900: #362955;
   --vds-purple-950: #271d3e;
+  --vds-purple-1000: #19122a;
   --vds-orchid-50: #fcf3ff;
   --vds-orchid-100: #f9e2fe;
   --vds-orchid-200: #f2cafb;
@@ -125,6 +142,7 @@
   --vds-orchid-800: #5d2c68;
   --vds-orchid-900: #45214e;
   --vds-orchid-950: #321838;
+  --vds-orchid-1000: #210f25;
   --vds-magenta-50: #fff3f8;
   --vds-magenta-100: #ffe2ef;
   --vds-magenta-200: #ffc8e2;
@@ -136,6 +154,7 @@
   --vds-magenta-800: #672b4c;
   --vds-magenta-900: #4e2039;
   --vds-magenta-950: #39172a;
+  --vds-magenta-1000: #260d1b;
   --vds-white: #ffffff;
   --vds-font-sans: 'Rubik', ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -200,21 +219,25 @@
   --vds-primary-soft-hover: var(--vds-midnight-100);
   --vds-success: var(--vds-emerald-600);
   --vds-success-hover: var(--vds-emerald-700);
+  --vds-success-active: var(--vds-emerald-800);
   --vds-on-success: var(--vds-white);
   --vds-success-soft: var(--vds-emerald-50);
   --vds-success-soft-hover: var(--vds-emerald-100);
   --vds-warning: var(--vds-amber-400);
   --vds-warning-hover: var(--vds-amber-500);
+  --vds-warning-active: var(--vds-amber-600);
   --vds-on-warning: var(--vds-amber-950);
   --vds-warning-soft: var(--vds-amber-50);
   --vds-warning-soft-hover: var(--vds-amber-100);
   --vds-danger: var(--vds-rose-600);
   --vds-danger-hover: var(--vds-rose-700);
+  --vds-danger-active: var(--vds-rose-800);
   --vds-on-danger: var(--vds-white);
   --vds-danger-soft: var(--vds-rose-50);
   --vds-danger-soft-hover: var(--vds-rose-100);
   --vds-info: var(--vds-midnight-600);
   --vds-info-hover: var(--vds-midnight-700);
+  --vds-info-active: var(--vds-midnight-800);
   --vds-on-info: var(--vds-white);
   --vds-info-soft: var(--vds-midnight-50);
   --vds-info-soft-hover: var(--vds-midnight-100);
@@ -268,21 +291,25 @@
   --vds-primary-soft-hover: color-mix(in oklab, var(--vds-midnight-300) 24%, transparent);
   --vds-success: var(--vds-emerald-400);
   --vds-success-hover: var(--vds-emerald-300);
+  --vds-success-active: var(--vds-emerald-200);
   --vds-on-success: var(--vds-emerald-950);
   --vds-success-soft: color-mix(in oklab, var(--vds-emerald-400) 16%, transparent);
   --vds-success-soft-hover: color-mix(in oklab, var(--vds-emerald-400) 24%, transparent);
   --vds-warning: var(--vds-amber-400);
   --vds-warning-hover: var(--vds-amber-300);
+  --vds-warning-active: var(--vds-amber-200);
   --vds-on-warning: var(--vds-amber-950);
   --vds-warning-soft: color-mix(in oklab, var(--vds-amber-400) 16%, transparent);
   --vds-warning-soft-hover: color-mix(in oklab, var(--vds-amber-400) 24%, transparent);
   --vds-danger: var(--vds-rose-400);
   --vds-danger-hover: var(--vds-rose-300);
+  --vds-danger-active: var(--vds-rose-200);
   --vds-on-danger: var(--vds-rose-950);
   --vds-danger-soft: color-mix(in oklab, var(--vds-rose-400) 16%, transparent);
   --vds-danger-soft-hover: color-mix(in oklab, var(--vds-rose-400) 24%, transparent);
   --vds-info: var(--vds-midnight-400);
   --vds-info-hover: var(--vds-midnight-300);
+  --vds-info-active: var(--vds-midnight-200);
   --vds-on-info: var(--vds-midnight-950);
   --vds-info-soft: color-mix(in oklab, var(--vds-midnight-400) 16%, transparent);
   --vds-info-soft-hover: color-mix(in oklab, var(--vds-midnight-400) 24%, transparent);

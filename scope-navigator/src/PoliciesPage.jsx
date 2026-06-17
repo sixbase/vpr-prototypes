@@ -3,7 +3,7 @@ import {
   Shield, ShieldCheck, ShieldX, ShieldAlert, Monitor, Mail,
   ChevronDown, ChevronRight, ToggleLeft, ToggleRight, Search,
   Users, Building2, Store, Copy, MoreHorizontal,
-} from 'lucide-react';
+} from '@icons';
 import { useScope } from './ScopeContext';
 import { typeConfig } from './config';
 

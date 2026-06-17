@@ -4,7 +4,7 @@ import {
   AlertTriangle, Activity, Clock, Globe, LayoutDashboard, Users, Laptop,
   Bug, FileCheck, Settings, MailSearch, BarChart3, ListFilter, ScrollText,
   Globe2, FileText, ChevronRight
-} from 'lucide-react';
+} from '@icons';
 import { flatEntityList } from './data';
 import { typeConfig, statusConfig, TypeBadge, StatusBadge } from './config';
 

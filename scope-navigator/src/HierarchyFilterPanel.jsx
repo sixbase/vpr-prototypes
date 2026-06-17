@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Search, X, ChevronRight, Check, Minus } from 'lucide-react';
+import { Search, X, ChevronRight, Check, Minus } from '@icons';
 import { typeConfig } from './config';
 
 // ── Checkbox ────────────────────────────────────────────────────────

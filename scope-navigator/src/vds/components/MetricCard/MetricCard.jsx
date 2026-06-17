@@ -1,5 +1,5 @@
 import { forwardRef, isValidElement, useEffect, useRef, useState } from 'react'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { TrendingUp, TrendingDown } from '@icons'
 import { cx } from '../../lib/cx.js'
 import { Surface } from '../Surface/Surface.jsx'
 import { Icon } from '../Icon/Icon.jsx'

@@ -1,5 +1,5 @@
 import { Children, Fragment, isValidElement, useCallback, useMemo, useState } from 'react'
-import { ChevronDown, Check } from 'lucide-react'
+import { ChevronDown, Check } from '@icons'
 import { cx } from '../../lib/cx.js'
 import { Icon } from '../Icon/Icon.jsx'
 import { Popover } from '../Popover/Popover.jsx'

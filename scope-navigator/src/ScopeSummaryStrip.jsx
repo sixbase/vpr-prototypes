@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef } from 'react';
-import { X } from 'lucide-react';
+import { X } from '@icons';
 import { useScope } from './ScopeContext';
 import useClickOutside from './useClickOutside';
 import { countDescendantsByType, collectDevicesInScope, computeDeviceStats, collectPackageAdoption } from './data';

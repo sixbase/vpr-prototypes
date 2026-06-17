@@ -1,5 +1,5 @@
 import { forwardRef, useState } from 'react'
-import { ChevronDown, ChevronUp, Lock, ArrowRight, LogOut } from 'lucide-react'
+import { ChevronDown, ChevronUp, Lock, ArrowRight, LogOut } from '@icons'
 import { cx } from '../../lib/cx.js'
 import { Icon } from '../Icon/Icon.jsx'
 

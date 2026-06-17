@@ -2,7 +2,7 @@ import {
   Building2, Store, Users, Network, Boxes,
   Mail, Send, ShieldCheck, Bug, Globe, Shield, Monitor, Cloud, Key, Package,
   Layers, Tag, Split, Briefcase, EyeOff, CaptionsOff,
-} from 'lucide-react';
+} from '@icons';
 
 // ── Entity type + partner capability taxonomy ──────────────────────
 // Entity types stored on the data model.

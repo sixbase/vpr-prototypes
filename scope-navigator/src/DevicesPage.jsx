@@ -7,7 +7,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   ShieldCheck, ShieldX, Shield, AlertTriangle, Monitor,
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronRight, Building2, Store, Users, Filter, X, Check, Minus,
-} from 'lucide-react';
+} from '@icons';
 import { useScope } from './ScopeContext';
 import { collectDevicesInScope, computeDeviceStats, findEntityById, generateDevicesForCustomer } from './data';
 import HierarchyFilterPanel from './HierarchyFilterPanel';
