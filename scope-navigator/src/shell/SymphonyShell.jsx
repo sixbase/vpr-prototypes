@@ -60,7 +60,9 @@ const C = {
 
 const SYM_GUTTER = 32
 const SYM_PAD = 8
-const SYM_W_COLLAPSED = SYM_GUTTER + SYM_PAD * 2
+// Collapsed rail width = 2 × the icon-column center (NAV_PAD_X 16 + card pad 8 + 16 = 40),
+// so icons keep the SAME x as expanded — they never slide horizontally on collapse/expand.
+const SYM_W_COLLAPSED = 80
 const SYM_W_EXPANDED = 242
 // Product card (Figma 53:8822): recessed midnight-1000 well, 8px radius, 8px padding,
 // 8px gap between the header and the sub-items.
@@ -84,7 +86,7 @@ const SCOPE_TYPE_CONFIG = {
 
 // Inert handler bag for the outgoing (snapshot) layer during a slide.
 const NOOP_H = {
-  onSelectSymphony() {}, onOpenWorkspace() {}, onToggleSym() {}, onSelectPortal() {},
+  onSelectSymphony() {}, onOpenWorkspace() {}, onToggleProduct() {}, onToggleSym() {}, onSelectPortal() {},
   onTogglePortal() {}, onSwitchProduct() {}, onHome() {}, onToggleDark() {}, onAddCustomer() {}, onOpenModal() {}, dark: false,
 }
 
@@ -141,7 +143,7 @@ const FIRST_SYM_ITEM = Object.fromEntries(PRODUCTS.filter((p) => p.items?.length
 /* ---- Symphony nav rows (dark) — Figma 48:6476 ---- */
 // Generic row: 16px icon + label in a full-width rounded pill. Transparent at rest,
 // midnight-900 on hover, azure when selected. Collapses to a centered icon.
-function MenuItem({ icon, label, labelSize = 12, labelWeight = 500, color, iconColor = C.icon, fp, selected, onClick, collapsed, ariaCurrent, title }) {
+function MenuItem({ icon, label, labelSize = 12, labelWeight = 500, color, iconColor = C.icon, fp, selected, onClick, collapsed, centerCollapsed, ariaCurrent, title }) {
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag
@@ -150,9 +152,11 @@ function MenuItem({ icon, label, labelSize = 12, labelWeight = 500, color, iconC
       className={['ob-mrow', selected && 'ob-mrow--sel'].filter(Boolean).join(' ')}
       style={{
         display: 'flex', alignItems: 'center', gap: 8, width: '100%', borderRadius: 5, border: 0,
-        padding: collapsed ? `8px ${(SYM_W_COLLAPSED - 16) / 2}px` : '8px 12px 8px 8px',
+        // Sub-items keep the same padding in both states (icon never shifts). Bottom-nav rows
+        // (centerCollapsed) glide their icon to center when collapsed via the padding transition.
+        padding: centerCollapsed && collapsed ? '8px 16px' : '8px 12px 8px 8px',
         background: selected ? C.selected : undefined,   // NOT 'transparent' — inline would override :hover
-        cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', transition: 'background-color 120ms ease',
+        cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', transition: `background-color 120ms ease, padding 220ms ${OB_EASE}`,
       }}
     >
       {/* icon glyph (Figma #618bc2 = midnight-400) is a different color than the label.
@@ -170,8 +174,9 @@ function MenuItem({ icon, label, labelSize = 12, labelWeight = 500, color, iconC
 }
 
 function Eyebrow({ collapsed, children }) {
-  if (collapsed) return null
-  return <p style={{ margin: 0, fontSize: 10, fontWeight: 400, letterSpacing: '1px', color: C.ink, whiteSpace: 'nowrap' }}>{children}</p>
+  // Always rendered (even collapsed) so its height + the section gap are preserved — only
+  // the text fades out. Returning null when collapsed would shift everything below it up.
+  return <p style={{ margin: 0, fontSize: 10, fontWeight: 400, letterSpacing: '1px', color: C.ink, whiteSpace: 'nowrap', overflow: 'hidden', opacity: collapsed ? 0 : 1, transition: 'opacity 150ms ease' }}>{children}</p>
 }
 
 function MenuDivider() {
@@ -197,11 +202,11 @@ function ProductHeader({ product, collapsed, open, onToggle, onOpen, bare, selec
       aria-expanded={onToggle ? open : undefined}
       aria-current={bare && selected ? 'page' : undefined}
       title={locked ? `${product.label} — not subscribed` : onToggle ? `${open ? 'Collapse' : 'Expand'} ${product.label}` : `Open ${product.label}`}
-      style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 8, width: '100%', border: 0, padding: bare && !collapsed ? 8 : 0, borderRadius: bare ? 5 : 0, cursor: action ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left' }}>
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%', border: 0, padding: bare ? 8 : 0, borderRadius: 5, cursor: action ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', transition: 'background-color 120ms ease' }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
         {/* exact Figma 32px tile (gradient fill + stroke baked into the SVG). Locked tiles
             add a lock badge overlay at the bottom-right corner. */}
-        <span style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
+        <span className="ob-ptile" style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
           <img src={product.tileAsset} alt="" style={{ width: 32, height: 32, display: 'block' }} />
           {locked && <img src={lockBadge} alt="" style={{ position: 'absolute', left: 20, top: 20, width: 16, height: 16 }} />}
         </span>
@@ -255,11 +260,10 @@ function PortalRow({ iconSize = 16, icon, label, labelSize = 12, labelWeight = 5
 }
 
 /* ====================== Symphony menu (dark) — Figma 48:6476 ====================== */
-function SymphonyMenu({ collapsed, page, onSelectItem, onOpenWorkspace, onToggleCollapse, dark, onToggleDark }) {
-  // Per-product section collapse — products start expanded.
-  const [openIds, setOpenIds] = useState(() => Object.fromEntries(PRODUCTS.filter((p) => !p.locked).map((p) => [p.id, true])))
-  const toggle = (id) => setOpenIds((o) => ({ ...o, [id]: !o[id] }))
-  const px = collapsed ? 0 : NAV_PAD_X
+function SymphonyMenu({ collapsed, page, openIds, onToggleProduct, onSelectItem, onOpenWorkspace, onToggleCollapse, dark, onToggleDark }) {
+  // Per-product open/closed state is owned by ShellInner (lifted) so it survives nav
+  // collapse/expand AND workspace round-trips — it never resets to the default.
+  const px = NAV_PAD_X   // section padding stays 16 in both states (icons keep their x)
 
   return (
     <nav style={{
@@ -280,8 +284,8 @@ function SymphonyMenu({ collapsed, page, onSelectItem, onOpenWorkspace, onToggle
         <MenuDivider />
 
         {/* PRODUCTS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: collapsed ? `16px 0` : 16 }}>
-          {!collapsed && <Eyebrow collapsed={collapsed}>PRODUCTS</Eyebrow>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16 }}>
+          <Eyebrow collapsed={collapsed}>PRODUCTS</Eyebrow>
           {/* standalone Overview — gradient tile + name, card-less; selectable (azure active). */}
           <ProductHeader product={PRODUCTS_OVERVIEW} collapsed={collapsed} bare
             selected={page === PRODUCTS_OVERVIEW.id}
@@ -290,17 +294,19 @@ function SymphonyMenu({ collapsed, page, onSelectItem, onOpenWorkspace, onToggle
             // Each product is a recessed card (collapsed nav drops the card → centered tile).
             if (p.locked) {
               return (
-                <div key={p.id} style={collapsed ? undefined : PRODUCT_CARD}>
+                <div key={p.id} style={PRODUCT_CARD}>
                   <ProductHeader product={p} collapsed={collapsed} />
                 </div>
               )
             }
             const open = openIds[p.id]
             return (
-              <div key={p.id} style={collapsed ? undefined : PRODUCT_CARD}>
+              // Same card structure in both states — collapsing only hides labels + narrows
+              // the rail, so the sub-page icons stay put on the x-axis (no horizontal jump).
+              <div key={p.id} style={PRODUCT_CARD}>
                 <ProductHeader product={p} collapsed={collapsed} open={open}
-                  onToggle={() => toggle(p.id)} onOpen={() => onOpenWorkspace(p.id)} />
-                {open && !collapsed && (
+                  onToggle={() => onToggleProduct(p.id)} onOpen={() => onOpenWorkspace(p.id)} />
+                {open && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {p.items.map((it) => (
                       <MenuItem key={it.id} collapsed={collapsed} icon={<it.icon size={16} />} label={it.label} labelSize={13} color={C.ink}
@@ -325,14 +331,14 @@ function SymphonyMenu({ collapsed, page, onSelectItem, onOpenWorkspace, onToggle
           <Eyebrow collapsed={collapsed}>OTHER</Eyebrow>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {FOOTER.map((f) => (
-              <MenuItem key={f.id} collapsed={collapsed} icon={<f.icon size={16} />} label={f.label} color={C.ink} />
+              <MenuItem key={f.id} collapsed={collapsed} centerCollapsed icon={<f.icon size={16} />} label={f.label} color={C.ink} />
             ))}
           </div>
         </div>
         <MenuDivider />
         <div style={{ display: 'flex', flexDirection: 'column', padding: `8px ${px}px` }}>
-          <MenuItem collapsed={collapsed} icon={dark ? <Sun size={16} /> : <Moon size={16} />} label={dark ? 'Light mode' : 'Dark mode'} color={C.ink} onClick={onToggleDark} />
-          <MenuItem collapsed={collapsed} icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />} label="Collapse" color={C.ink} onClick={onToggleCollapse} />
+          <MenuItem collapsed={collapsed} centerCollapsed icon={dark ? <Sun size={16} /> : <Moon size={16} />} label={dark ? 'Light mode' : 'Dark mode'} color={C.ink} onClick={onToggleDark} />
+          <MenuItem collapsed={collapsed} centerCollapsed icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />} label="Collapse" color={C.ink} onClick={onToggleCollapse} />
         </div>
       </div>
     </nav>
@@ -495,7 +501,7 @@ function iconOf(id) {
 /* One full-bleed stage — Symphony launcher or a product workspace. Rendered from
    explicit params so a snapshot can be frozen and held beneath the live one. */
 function MainView({ params, h }) {
-  const { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed } = params
+  const { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts } = params
   if (openPortal) {
     return (
       <div style={{ position: 'absolute', inset: 0, display: 'flex', padding: 8, minWidth: 0, background: C.topbar }}>
@@ -513,6 +519,7 @@ function MainView({ params, h }) {
     <div style={{ position: 'absolute', inset: 0, display: 'flex', background: C.topbar }}>
       <SymphonyMenu
         collapsed={symCollapsed} page={symphonyPage}
+        openIds={openProducts} onToggleProduct={h.onToggleProduct}
         onSelectItem={h.onSelectSymphony} onOpenWorkspace={h.onOpenWorkspace} onToggleCollapse={h.onToggleSym}
         dark={h.dark} onToggleDark={h.onToggleDark} onAddCustomer={h.onAddCustomer}
       />
@@ -553,6 +560,9 @@ function ShellInner() {
   const [symCollapsed, setSymCollapsed] = useState(false)
   const [portalCollapsed, setPortalCollapsed] = useState(false)
   const [symphonyPage, setSymphonyPage] = useState('ies-logs')
+  // Lifted so per-product open/closed survives nav collapse + workspace round-trips.
+  const [openProducts, setOpenProducts] = useState(() => Object.fromEntries(PRODUCTS.filter((p) => !p.locked).map((p) => [p.id, true])))
+  const toggleProduct = (id) => setOpenProducts((o) => ({ ...o, [id]: !o[id] }))
   const [portalPage, setPortalPage] = useState(null)
   const [openPortal, setOpenPortal] = useState(null) // null = Symphony shown; else workspace
   const [slide, setSlide] = useState(null)
@@ -566,7 +576,7 @@ function ShellInner() {
   // cover is never pulled while it's still translucent.
   const endSlide = () => { clearTimeout(slideTimer.current); setSlide(null) }
   const withSlide = (dir, action) => {
-    const leaving = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed }
+    const leaving = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts }
     action()
     setSlide({ leaving, dir, running: false })
     requestAnimationFrame(() => requestAnimationFrame(() => setSlide((s) => (s ? { ...s, running: true } : s))))
@@ -588,6 +598,7 @@ function ShellInner() {
   const h = {
     onSelectSymphony: (id) => setSymphonyPage(id),
     onOpenWorkspace: drillIn,
+    onToggleProduct: toggleProduct,
     onToggleSym: () => setSymCollapsed((c) => !c),
     onSelectPortal: setPortalPage,
     onTogglePortal: () => setPortalCollapsed((c) => !c),
@@ -599,7 +610,7 @@ function ShellInner() {
     dark,
   }
   const leavingH = { ...NOOP_H, dark }
-  const params = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed }
+  const params = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts }
 
   return (
     <div className="shell-root" style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: C.topbar, overflow: 'hidden', fontFamily: 'var(--vds-font-sans)' }}>

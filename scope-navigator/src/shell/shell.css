@@ -20,14 +20,15 @@
 /* Product cards: the header pill itself stays flat; only the chevron's 24px container
    reacts on hover (per Figma 53:8494). Rest: transparent container, #3d68a4 arrow.
    Hover: container fills #152E51, arrow goes white. */
-.ob-chevc { background: transparent; color: #3d68a4; transition: background-color 120ms ease, color 120ms ease; }
-.ob-phead:hover .ob-chevc { background: var(--vds-midnight-800); color: var(--vds-white); }
+.ob-chevc { background: transparent; color: #3d68a4; transition: color 120ms ease; }
 
-/* Card-less standalone Overview button: rest transparent, hover #152E51, active #0068cb
-   (Figma 53:8508). Driven by classes so :hover isn't beaten by an inline bg. */
-.ob-phead--bare { transition: background-color 120ms ease; }
-.ob-phead--bare:not(.ob-phead--sel):hover { background: var(--vds-midnight-800); }
-.ob-phead--sel { background: #0068cb; }
+/* Product hover acts on the ICON itself (no pill fill): the 32px tile scales up. `button`
+   excludes the locked SAT/Archive divs (not clickable). Works in both the expanded and
+   collapsed rail. The chevron arrow also whitens (expanded only). */
+.ob-ptile { transition: transform 150ms ease; }
+button.ob-phead:hover .ob-ptile { transform: scale(1.1); }
+button.ob-phead:hover .ob-chevc { color: var(--vds-white); }
+.ob-phead--sel { background: #0068cb; }   /* active bare button (Figma 53:8508) */
 
 /* Placeholder page-header buttons (Figma 53:8072): primary azure, slight darken on hover. */
 .ob-hbtn { transition: background-color 120ms ease; }
