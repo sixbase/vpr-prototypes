@@ -7,20 +7,15 @@ import {
 } from '@icons'
 import { ScopeProvider, useScope } from '../ScopeContext'
 import { ScopeNavigator } from '../vds/components/index.js'
-import { VipreMark } from '../config'
+import { useBrand, brandStyleVars, BrandLogo, BrandPicker } from './branding.jsx'
+import { ProductTile, OverviewTile, CustomersTile } from './ProductTile.jsx'
+import { PRODUCT_GLYPHS } from './productGlyphs.js'
 import { mockData } from '../data'
 import { ProvisioningModal, SuccessToast } from '../ProvisioningModal'
 import CustomerManagementPageB from '../CustomerManagementPageB'
 import { PORTALS } from './portalData.js'
-// Exact product tile illustrations (gradient fill + stroke) + lock badge, pulled from
-// Figma 53:8494. Every product ships its own 32px SVG tile.
-import overviewTile from './assets/overview-tile.svg'
-import customersTile from './assets/customers-tile.svg'
-import iesTile from './assets/ies-tile.svg'
-import safesendTile from './assets/safesend-tile.svg'
-import edrTile from './assets/edr-tile.svg'
-import satTile from './assets/sat-tile.svg'
-import archiveTile from './assets/archive-tile.svg'
+// All nav tiles are token-driven inline components (gradient products + flat Overview/
+// Customers section tiles) so they re-tint with the reseller theme.
 import lockBadge from './assets/lock-badge.svg'
 import './shell.css'
 
@@ -48,7 +43,7 @@ const C = {
   iconDim: 'var(--vds-midnight-600)',      // dim / Full-Portal icon (Figma #2b5288)
   navHover: 'var(--vds-midnight-900)',     // row hover lift (Figma #0f223d)
   divider: 'var(--vds-midnight-800)',      // section divider (Figma #152e51)
-  selected: '#0068cb',               // ACTIVE state — exact Figma blue; NOT a DS palette token (flagged)
+  selected: 'var(--nav-accent)',     // ACTIVE state — follows the reseller brand (default = cobalt #0068cb)
   onSelected: 'var(--vds-white)',    // white icon + text on the active blue
   portalBg: 'var(--vds-surface)',          // flips in dark mode
   portalInk: 'var(--vds-ink-muted)',
@@ -110,23 +105,23 @@ function layerStyle(role, slide) {
 
 /* ---- Data ---- */
 const PRODUCTS = [
-  { id: 'ies', label: 'IES', icon: Mail, tileAsset: iesTile, items: [
+  { id: 'ies', label: 'IES', icon: Mail, glyph: PRODUCT_GLYPHS.ies, items: [
     { id: 'ies-logs', label: 'Message Logs', icon: ScrollText },
     { id: 'ies-threat', label: 'Threat Explorer', icon: Radar },
     { id: 'ies-config', label: 'Email Config', icon: Settings },
   ] },
-  { id: 'safesend', label: 'SafeSend', icon: Send, tileAsset: safesendTile, items: [
+  { id: 'safesend', label: 'SafeSend', icon: Send, glyph: PRODUCT_GLYPHS.safesend, items: [
     { id: 'ss-reports', label: 'Reports', icon: FileText },
     { id: 'ss-policies', label: 'Policies', icon: ShieldCheck },
     { id: 'ss-settings', label: 'Settings', icon: Settings },
   ] },
-  { id: 'edr', label: 'EDR', icon: Laptop, tileAsset: edrTile, items: [
+  { id: 'edr', label: 'EDR', icon: Laptop, glyph: PRODUCT_GLYPHS.edr, items: [
     { id: 'edr-devices-s', label: 'Devices', icon: Monitor },
     { id: 'edr-incidents-s', label: 'Incidents', icon: Bell },
     { id: 'edr-settings-s', label: 'Settings', icon: Settings },
   ] },
-  { id: 'sat', label: 'SAT', icon: GraduationCap, locked: true, tileAsset: satTile },
-  { id: 'archive', label: 'Archive', icon: Database, locked: true, tileAsset: archiveTile },
+  { id: 'sat', label: 'SAT', icon: GraduationCap, locked: true, glyph: PRODUCT_GLYPHS.sat },
+  { id: 'archive', label: 'Archive', icon: Database, locked: true, glyph: PRODUCT_GLYPHS.archive },
 ]
 const FOOTER = [
   { id: 'logs', label: 'Logs', icon: ScrollText },
@@ -136,10 +131,10 @@ const FOOTER = [
 // PARTNERS group (Figma 53:8800): now just Customers, rendered as a bare tile button
 // (32px gradient tile + name), like the standalone Overview. The old Overview leaf is gone.
 const PARTNERS = [
-  { id: 'customers', label: 'Customers', icon: Building2, tileAsset: customersTile },
+  { id: 'customers', label: 'Customers', icon: Building2, Tile: CustomersTile },
 ]
 // Standalone "Overview" tile that opens the PRODUCTS group (no sub-pages, muted tile).
-const PRODUCTS_OVERVIEW = { id: 'products-overview', label: 'Overview', icon: Boxes, tileAsset: overviewTile }
+const PRODUCTS_OVERVIEW = { id: 'products-overview', label: 'Overview', icon: Boxes, Tile: OverviewTile }
 const FIRST_SYM_ITEM = Object.fromEntries(PRODUCTS.filter((p) => p.items?.length).map((p) => [p.id, p.items[0].id]))
 
 /* ---- Symphony nav rows (dark) — Figma 48:6476 ---- */
@@ -209,7 +204,11 @@ function ProductHeader({ product, collapsed, open, onToggle, onOpen, bare, selec
         {/* exact Figma 32px tile (gradient fill + stroke baked into the SVG). Locked tiles
             add a lock badge overlay at the bottom-right corner. */}
         <span className="ob-ptile" style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
-          <img src={product.tileAsset} alt="" style={{ width: 32, height: 32, display: 'block' }} />
+          {product.Tile
+            ? <product.Tile />
+            : product.glyph
+            ? <ProductTile glyph={product.glyph} muted={locked} />
+            : <img src={product.tileAsset} alt="" style={{ width: 32, height: 32, display: 'block' }} />}
           {locked && <img src={lockBadge} alt="" style={{ position: 'absolute', left: 20, top: 20, width: 16, height: 16 }} />}
         </span>
         {!collapsed && <span style={{ fontSize: 14, fontWeight: 600, color: locked ? C.ink : C.white, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.label}</span>}
@@ -453,7 +452,7 @@ function WorkspaceNav({ product, page, collapsed, onToggleCollapse, onSelectPage
 
 /* ============= Content card (shared placeholder) ============= */
 // Placeholder page-header actions (Figma 53:8072): primary azure buttons, right-aligned.
-const HEADER_BUTTONS = ['Add IMAP', 'Add M365', 'Add Google Workspace']
+const HEADER_BUTTONS = ['Action 1', 'Action 2', 'Action 3']
 function HeaderButtons() {
   return (
     <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
@@ -563,6 +562,7 @@ function MainView({ params, h }) {
 function ShellInner() {
   const { path, navigate, teleportedSegments } = useScope()
 
+  const [brand, setBrand] = useBrand()
   const [dark, setDark] = useState(false)
   const [provModal, setProvModal] = useState(null) // { type, availableTypes, contextEntity } | null
   const [toast, setToast] = useState(null)
@@ -623,7 +623,7 @@ function ShellInner() {
   const params = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts }
 
   return (
-    <div className="shell-root" style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: C.topbar, overflow: 'hidden', fontFamily: 'var(--vds-font-sans)' }}>
+    <div className="shell-root" style={{ ...brandStyleVars(brand), height: '100vh', display: 'flex', flexDirection: 'column', background: C.topbar, overflow: 'hidden', fontFamily: 'var(--vds-font-sans)' }}>
       {/* Global bar: VIPRE mark in the brand/home position (toy-box-1 treatment),
           then the real scope breadcrumb. One logo only — the breadcrumb root uses a
           neutral icon. The mark doubles as "back to Symphony" (home). The bar is
@@ -632,11 +632,9 @@ function ShellInner() {
           = midnight-950 = the Symphony menu bg exactly). */}
       <div className="dark" style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, background: 'var(--vds-canvas)', borderBottom: '1px solid var(--vds-midnight-1000)' }}>
         <button type="button" onClick={goHome} title="Symphony home" aria-label="Symphony home"
-          /* paddingLeft 11px centers the 26px mark on x=24 — the same axis as the
-             Symphony left-nav icons (SYM_PAD 8 + SYM_GUTTER 32 / 2). */
-          /* paddingLeft 19 centers the 26px mark on x=32 — the Symphony nav icon column (Figma 48:6476). */
+          /* paddingLeft 19 aligns the logo mark to the Symphony nav icon column (Figma 48:6476). */
           style={{ display: 'flex', alignItems: 'center', paddingLeft: 19, paddingRight: 'var(--vds-space-3)', border: 0, background: 'transparent', cursor: 'pointer', color: C.white }}>
-          <VipreMark width={26} style={{ display: 'block' }} />
+          <BrandLogo brand={brand} />
         </button>
         <ScopeNavigator
           path={path}
@@ -647,6 +645,10 @@ function ShellInner() {
           teleportedSegments={teleportedSegments}
           style={{ flex: 1, minWidth: 0, background: 'transparent', borderBottom: 'none', paddingLeft: 0 }}
         />
+        {/* Reseller theme switcher — white-labels the portal chrome + logo. */}
+        <div style={{ display: 'flex', alignItems: 'center', paddingRight: 16, paddingLeft: 8 }}>
+          <BrandPicker brand={brand} onPick={setBrand} />
+        </div>
       </div>
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0, background: C.topbar }}>
         {/* live (incoming) view */}

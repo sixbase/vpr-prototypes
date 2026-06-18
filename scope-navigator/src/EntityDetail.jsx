@@ -1491,7 +1491,7 @@ export function EntityIdentityHeader({ entity, scrolled = false, statusAsDot = f
   );
 }
 
-export default function EntityDetail({ entity, siblings, onDrillDown, onAddProduct, showFuture = false, externalFilter, onExternalFilterChange, onViewAll, hideTypeBadge = false, statusAsDot = false, hideContactInfo = false, hideHeader = false, hideAddProduct = false, onPackageClick, onOpenChildren, childListProps = {} }) {
+export default function EntityDetail({ entity, siblings, onDrillDown, onOpenEntity, onAddProduct, showFuture = false, externalFilter, onExternalFilterChange, onViewAll, hideTypeBadge = false, statusAsDot = false, hideContactInfo = false, hideHeader = false, hideAddProduct = false, onPackageClick, onOpenChildren, childListProps = {} }) {
   const { Icon, color, bg, ring, label } = typeConfig[entity.type];
   const hasChildren = entity.children?.length > 0;
   const isLeaf = entity.type === 'customer' || !hasChildren;
@@ -1748,24 +1748,40 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onAddProdu
                               const ChildIcon = cfg.Icon;
                               const countLabel = descCountLabel(child);
                               return (
-                                <button
+                                <div
                                   key={child.id}
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={() => onDrillDown(child)}
-                                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer group/desc"
+                                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDrillDown(child); } }}
+                                  className="relative w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer group/desc"
                                 >
                                   <EntityTypeIcon type={child.type} size="md" />
                                   <div className="flex-1 min-w-0 text-left">
                                     <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">{child.name}</div>
                                     {countLabel && <div className="text-xs text-zinc-400 dark:text-zinc-500">{countLabel}</div>}
                                   </div>
-                                  {isEntityUnmanaged(child) && (
-                                    <span className="inline-flex items-center text-zinc-400 dark:text-zinc-500 flex-shrink-0" title="Unmanaged — outside the managed boundary">
-                                      <CaptionsOff className="w-3.5 h-3.5" strokeWidth={2} />
-                                    </span>
+                                  {/* right-side meta fades out on hover to make room for the Open button */}
+                                  <div className={`flex items-center gap-2.5 flex-shrink-0 ${onOpenEntity ? 'transition-opacity duration-100 group-hover/desc:opacity-0' : ''}`}>
+                                    {isEntityUnmanaged(child) && (
+                                      <span className="inline-flex items-center text-zinc-400 dark:text-zinc-500 flex-shrink-0" title="Unmanaged — outside the managed boundary">
+                                        <CaptionsOff className="w-3.5 h-3.5" strokeWidth={2} />
+                                      </span>
+                                    )}
+                                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusConfig[child.status].dot}`} title={statusConfig[child.status].label} />
+                                    <ChevronRight className="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover/desc:text-zinc-400 transition-colors flex-shrink-0" />
+                                  </div>
+                                  {/* hover "Open" — promotes to a full scope change, like the drawer's Open */}
+                                  {onOpenEntity && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onOpenEntity(child); }}
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/desc:opacity-100 transition-opacity inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                                    >
+                                      Open
+                                      <ArrowUpRight className="w-3.5 h-3.5" />
+                                    </button>
                                   )}
-                                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusConfig[child.status].dot}`} title={statusConfig[child.status].label} />
-                                  <ChevronRight className="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover/desc:text-zinc-400 transition-colors flex-shrink-0" />
-                                </button>
+                                </div>
                               );
                             })}
                           </div>
