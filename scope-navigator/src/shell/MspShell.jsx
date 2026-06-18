@@ -724,8 +724,8 @@ function ShellInner() {
           onOpenPortal={openPortalFor}
           onToggleCollapse={() => setCollapsed((c) => !c)}
           dark={dark} onToggleDark={() => setDark((d) => !d)}
-          path={path} onNavigate={navigate}
-          onSelectRoot={() => setPage('customers')}
+          path={path} onNavigate={(nextPath) => { navigate(nextPath); setPage('customers') }}
+          onSelectRoot={() => { navigate([]); setPage('customers') }}
           subscribed={subscribed} loading={navLoading}
         />
 
@@ -733,8 +733,11 @@ function ShellInner() {
             the rounded top-left corner, then the grey body carrying the inset top shadow. */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', background: 'var(--vds-midnight-1000)', paddingLeft: 8, paddingTop: 8 }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
-            <ScopeHeader path={path} />
-            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', background: C.content }}>
+            {/* Scope/entity bar — only on product pages (reached from the product menu). The
+                Customers page carries its own "Customers" header, so the bar is hidden there
+                and the body takes over the rounded top-left corner. */}
+            {page !== 'customers' && <ScopeHeader path={path} />}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', background: C.content, ...(page === 'customers' ? { borderRadius: '32px 0 0 0', overflow: 'hidden' } : {}) }}>
               {page === 'customers' ? (
                 <div className="shell-customers" style={{ flex: 1, minWidth: 0, background: C.content, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

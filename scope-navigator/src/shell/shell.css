@@ -195,3 +195,12 @@ html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 
 /* 24px chips in the trail (the shared chip ships md=28). */
 .vds-scope-tree .vds-scope__chip--md { width: 24px; height: 24px; }
+
+/* Collapsed rail: keep the entity tiles fixed in size and position so they
+   don't shrink or shift when the nav opens/closes (like the product icons).
+   The tiles are <img>s, so the reset's max-width:100% otherwise clamps them to
+   the narrow collapsed row; and flex:1 on .stree-main would stretch the row and
+   slide them off the rail's center axis. Pinning the button to its content keeps
+   each tile pinned to the same spot the expanded rail puts it. */
+.vds-scope-tree--collapsed .stree-main { flex: 0 0 auto; justify-content: center; }
+.vds-scope-tree--collapsed .vds-scope__chip { max-width: none; }

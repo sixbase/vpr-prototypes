@@ -107,7 +107,10 @@ export function ScopeTree({
       dropdownHeader: children.length > 0 ? getDropdownHeader(children, 'drill', typeConfig) : '',
     }
     if (isLast) {
-      return { ...base, isActive: true, onMain: undefined, onDropdownSelect: (c) => onNavigate([...path, c]), currentEntityId: null }
+      // The active leaf re-selects itself: scope is unchanged, but consumers can
+      // use onNavigate to (re)open that entity's page when you're viewing something
+      // else (e.g. a product) for the same scope.
+      return { ...base, isActive: true, onMain: () => onNavigate(path), onDropdownSelect: (c) => onNavigate([...path, c]), currentEntityId: null }
     }
     return {
       ...base,
@@ -121,7 +124,7 @@ export function ScopeTree({
   const hasTrail = pathSegs.length > 0
 
   return (
-    <div className="vds-scope-tree" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div className={cx('vds-scope-tree', collapsed && 'vds-scope-tree--collapsed')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {/* ---- root "Customers" row ---- */}
       <div data-scope-row className={cx('stree-row stree-row--root', rootSelected && 'stree-row--sel')}>
         <button
