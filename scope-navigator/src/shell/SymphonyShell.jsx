@@ -137,6 +137,35 @@ const PARTNERS = [
 const PRODUCTS_OVERVIEW = { id: 'products-overview', label: 'Overview', icon: Boxes, Tile: OverviewTile }
 const FIRST_SYM_ITEM = Object.fromEntries(PRODUCTS.filter((p) => p.items?.length).map((p) => [p.id, p.items[0].id]))
 
+// ---- Faked per-customer subscriptions ----
+// No real entitlement data, so the PRODUCTS section is driven by a deterministic
+// hash of the scoped entity → one of these profiles (the SET of products that
+// customer subscribes to). Everything else renders locked. SAT/Archive have no
+// sub-pages here, so they stay out of the profiles (always locked) — the variation
+// is across the three expandable products. Scoping into a different customer flips
+// which products are subscribed, and subscribed products always default to expanded.
+const SUB_PROFILES = [
+  ['ies', 'safesend', 'edr'],   // full core (the default / root)
+  ['ies', 'safesend'],          // email only
+  ['ies', 'edr'],               // email + endpoint
+  ['safesend', 'edr'],          // collaboration + endpoint
+  ['ies'],                      // starter
+  ['edr'],                      // endpoint only
+]
+function subscriptionFor(scopeKey) {
+  if (!scopeKey || scopeKey === 'root') return new Set(SUB_PROFILES[0])
+  let h = 0
+  for (let i = 0; i < scopeKey.length; i++) h = (h * 31 + scopeKey.charCodeAt(i)) >>> 0
+  return new Set(SUB_PROFILES[h % SUB_PROFILES.length])
+}
+// The open/closed map that expands every product the scoped customer subscribes to.
+const expandedFor = (scopeKey) => Object.fromEntries([...subscriptionFor(scopeKey)].map((id) => [id, true]))
+// Which product owns a given sub-page id (null if it's not a product page).
+function productOfPage(id) {
+  for (const p of PRODUCTS) for (const it of p.items || []) if (it.id === id) return p.id
+  return null
+}
+
 /* ---- Symphony nav rows (dark) — Figma 48:6476 ---- */
 // Generic row: 16px icon + label in a full-width rounded pill. Transparent at rest,
 // midnight-900 on hover, azure when selected. Collapses to a centered icon.
@@ -263,10 +292,20 @@ function PortalRow({ iconSize = 16, icon, label, labelSize = 12, labelWeight = 5
 }
 
 /* ====================== Symphony menu (dark) — Figma 48:6476 ====================== */
-function SymphonyMenu({ collapsed, page, openIds, onToggleProduct, onSelectItem, onOpenWorkspace, onToggleCollapse, dark, onToggleDark }) {
+function SymphonyMenu({ collapsed, page, openIds, subscribed, onToggleProduct, onSelectItem, onOpenWorkspace, onToggleCollapse, dark, onToggleDark }) {
   // Per-product open/closed state is owned by ShellInner (lifted) so it survives nav
-  // collapse/expand AND workspace round-trips — it never resets to the default.
+  // collapse/expand AND workspace round-trips. It resets to "all subscribed expanded"
+  // only when the scoped customer changes (see the leafId effect in ShellInner).
   const px = NAV_PAD_X   // section padding stays 16 in both states (icons keep their x)
+
+  // Subscription is faked off the scoped entity: subscribed products keep their order
+  // at the top; everything else sinks to the bottom rendered locked (like the static
+  // SAT/Archive before). The key replays the re-enter animation when the set changes.
+  const orderedProducts = [
+    ...PRODUCTS.filter((p) => subscribed.has(p.id)),
+    ...PRODUCTS.filter((p) => !subscribed.has(p.id)),
+  ]
+  const subKey = orderedProducts.map((p) => p.id + (subscribed.has(p.id) ? '1' : '0')).join('|')
 
   return (
     <nav style={{
@@ -293,23 +332,29 @@ function SymphonyMenu({ collapsed, page, openIds, onToggleProduct, onSelectItem,
           <ProductHeader product={PRODUCTS_OVERVIEW} collapsed={collapsed} bare
             selected={page === PRODUCTS_OVERVIEW.id}
             onOpen={() => onSelectItem(PRODUCTS_OVERVIEW.id)} />
-          {PRODUCTS.map((p) => {
+          <div key={subKey} className="nav-products-anim" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {orderedProducts.map((p) => {
+            // Subscription is faked off the scoped entity — locked = not in the set.
+            const locked = p.locked || !subscribed.has(p.id)
+            const prod = locked ? { ...p, locked } : p
             // Each product is a recessed card (collapsed nav drops the card → centered tile).
-            if (p.locked) {
+            if (locked || !p.items) {
               return (
                 <div key={p.id} style={PRODUCT_CARD}>
-                  <ProductHeader product={p} collapsed={collapsed} />
+                  <ProductHeader product={prod} collapsed={collapsed} />
                 </div>
               )
             }
-            const open = openIds[p.id]
+            // Subscribed products default to expanded; an explicit toggle persists until
+            // the scoped customer changes (then the effect re-expands them).
+            const open = openIds[p.id] ?? true
             return (
               // Same card structure in both states — collapsing only hides labels + narrows
               // the rail, so the sub-page icons stay put on the x-axis (no horizontal jump).
               // gap:0 — the header→sub-items gap lives INSIDE the accordion (paddingTop) so it
               // animates away too, and the closed card is exactly header-height (like SAT/Archive).
               <div key={p.id} style={{ ...PRODUCT_CARD, gap: 0 }}>
-                <ProductHeader product={p} collapsed={collapsed} open={open}
+                <ProductHeader product={prod} collapsed={collapsed} open={open}
                   onToggle={() => onToggleProduct(p.id)} onOpen={() => onOpenWorkspace(p.id)} />
                 {/* Accordion: animate open/closed via grid-template-rows 0fr↔1fr (no fixed
                     height needed; works the same in the collapsed icon rail and expanded nav). */}
@@ -327,6 +372,7 @@ function SymphonyMenu({ collapsed, page, openIds, onToggleProduct, onSelectItem,
               </div>
             )
           })}
+          </div>
         </div>
 
       </div>
@@ -510,7 +556,7 @@ function iconOf(id) {
 /* One full-bleed stage — Symphony launcher or a product workspace. Rendered from
    explicit params so a snapshot can be frozen and held beneath the live one. */
 function MainView({ params, h }) {
-  const { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts } = params
+  const { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts, subscribed } = params
   if (openPortal) {
     return (
       <div style={{ position: 'absolute', inset: 0, display: 'flex', padding: 8, minWidth: 0, background: C.topbar }}>
@@ -528,7 +574,7 @@ function MainView({ params, h }) {
     <div style={{ position: 'absolute', inset: 0, display: 'flex', background: C.topbar }}>
       <SymphonyMenu
         collapsed={symCollapsed} page={symphonyPage}
-        openIds={openProducts} onToggleProduct={h.onToggleProduct}
+        openIds={openProducts} subscribed={subscribed} onToggleProduct={h.onToggleProduct}
         onSelectItem={h.onSelectSymphony} onOpenWorkspace={h.onOpenWorkspace} onToggleCollapse={h.onToggleSym}
         dark={h.dark} onToggleDark={h.onToggleDark} onAddCustomer={h.onAddCustomer}
       />
@@ -561,6 +607,9 @@ function MainView({ params, h }) {
 
 function ShellInner() {
   const { path, navigate, teleportedSegments } = useScope()
+  // The scoped customer drives the faked product subscriptions shown in the nav.
+  const leafId = path.at(-1)?.id ?? 'root'
+  const subscribed = subscriptionFor(leafId)
 
   const [brand, setBrand] = useBrand()
   const [dark, setDark] = useState(false)
@@ -571,7 +620,8 @@ function ShellInner() {
   const [portalCollapsed, setPortalCollapsed] = useState(false)
   const [symphonyPage, setSymphonyPage] = useState('ies-logs')
   // Lifted so per-product open/closed survives nav collapse + workspace round-trips.
-  const [openProducts, setOpenProducts] = useState(() => Object.fromEntries(PRODUCTS.filter((p) => !p.locked).map((p) => [p.id, true])))
+  // Seeded to the scoped customer's subscribed products, all expanded.
+  const [openProducts, setOpenProducts] = useState(() => expandedFor(leafId))
   const toggleProduct = (id) => setOpenProducts((o) => ({ ...o, [id]: !o[id] }))
   const [portalPage, setPortalPage] = useState(null)
   const [openPortal, setOpenPortal] = useState(null) // null = Symphony shown; else workspace
@@ -580,13 +630,25 @@ function ShellInner() {
 
   useEffect(() => { document.documentElement.classList.toggle('dark', dark) }, [dark])
 
+  // On a customer switch, default every product that customer subscribes to back to
+  // expanded (overriding any manual collapses from a previous customer), and step off
+  // any product page the new customer no longer subscribes to.
+  useEffect(() => {
+    const sub = subscriptionFor(leafId)
+    setOpenProducts(Object.fromEntries([...sub].map((id) => [id, true])))
+    setSymphonyPage((cur) => {
+      const owner = productOfPage(cur)
+      return owner && !sub.has(owner) ? PRODUCTS_OVERVIEW.id : cur
+    })
+  }, [leafId])
+
   // Fade-and-glide transition. Snapshot the leaving view (held still beneath), apply
   // the state change, then flip `running` on the next frame so the incoming layer
   // fades + glides into place. Cleared on the incoming layer's *opacity* end so the
   // cover is never pulled while it's still translucent.
   const endSlide = () => { clearTimeout(slideTimer.current); setSlide(null) }
   const withSlide = (dir, action) => {
-    const leaving = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts }
+    const leaving = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts, subscribed }
     action()
     setSlide({ leaving, dir, running: false })
     requestAnimationFrame(() => requestAnimationFrame(() => setSlide((s) => (s ? { ...s, running: true } : s))))
@@ -620,7 +682,7 @@ function ShellInner() {
     dark,
   }
   const leavingH = { ...NOOP_H, dark }
-  const params = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts }
+  const params = { openPortal, symphonyPage, portalPage, symCollapsed, portalCollapsed, openProducts, subscribed }
 
   return (
     <div className="shell-root" style={{ ...brandStyleVars(brand), height: '100vh', display: 'flex', flexDirection: 'column', background: C.topbar, overflow: 'hidden', fontFamily: 'var(--vds-font-sans)' }}>
