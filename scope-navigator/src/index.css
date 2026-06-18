@@ -6,6 +6,10 @@
    the Pages build stays self-contained. */
 @import "./vipre.css";
 
+/* Gradient-tile entity chips (Figma 78:531) render an <img> in the chip box — drop
+   the chip's solid fill so the tile's own gradient shows during/after load. */
+.vds-scope__chip--tile { background: transparent !important; padding: 0; object-fit: contain; }
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {

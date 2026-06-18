@@ -3,6 +3,10 @@ import {
   Mail, Send, ShieldCheck, Bug, Globe, Shield, Monitor, Cloud, Key, Package,
   Layers, Tag, Split, Briefcase, EyeOff, CaptionsOff,
 } from '@icons';
+import { DistributorIcon, ResellerIcon, CustomerIcon } from './entityIcons.jsx';
+import distributorTile from './assets/entity/distributor.svg';
+import resellerTile from './assets/entity/reseller.svg';
+import customerTile from './assets/entity/customer.svg';
 
 // ── Entity type + partner capability taxonomy ──────────────────────
 // Entity types stored on the data model.
@@ -28,8 +32,9 @@ export const partnerCapabilityOrder = ['msp', 'hybrid', 'reseller'];
 export const displayTypeConfig = {
   distributor: {
     label: 'Distributor',
-    Icon: Building2,
-    icon: Building2,
+    Icon: DistributorIcon,
+    icon: DistributorIcon,
+    tile: distributorTile,
     color: 'text-white',
     iconColor: 'text-white',
     textClass: 'text-white',
@@ -49,8 +54,9 @@ export const displayTypeConfig = {
   // both read from here, so they stay identical.
   reseller: {
     label: 'Reseller',
-    Icon: Network,
-    icon: Network,
+    Icon: ResellerIcon,
+    icon: ResellerIcon,
+    tile: resellerTile,
     color: 'text-white',
     iconColor: 'text-white',
     textClass: 'text-white',
@@ -63,8 +69,9 @@ export const displayTypeConfig = {
   },
   customer: {
     label: 'Customer',
-    Icon: Briefcase,
-    icon: Briefcase,
+    Icon: CustomerIcon,
+    icon: CustomerIcon,
+    tile: customerTile,
     color: 'text-white',
     iconColor: 'text-white',
     textClass: 'text-white',
@@ -111,8 +118,9 @@ export const typeConfig = {
   },
   partner: {
     label: 'Reseller',
-    Icon: Network,
-    icon: Network,
+    Icon: ResellerIcon,
+    icon: ResellerIcon,
+    tile: resellerTile,
     color: 'text-white',
     iconColor: 'text-white',
     textClass: 'text-white',
@@ -144,6 +152,12 @@ const ENTITY_ICON_GLYPH = { xs: 'w-3 h-3', sm: 'w-3 h-3', md: 'w-3.5 h-3.5', lg:
 
 export function EntityTypeIcon({ type, size = 'md', className = '' }) {
   const cfg = typeConfig[type] || typeConfig.customer;
+  // New canonical entity icons (Figma 78:531): a gradient tile per type. Types that
+  // ship a tile render it directly; root (and anything tile-less) keeps the neutral
+  // ring + glyph fallback.
+  if (cfg.tile) {
+    return <img src={cfg.tile} alt="" className={`inline-block flex-shrink-0 object-contain ${ENTITY_ICON_CHIP[size]} ${className}`} />;
+  }
   const Glyph = cfg.Icon;
   const glyphColor = TYPE_DS_GLYPH[type] ?? 'text-ink-muted';
   return (

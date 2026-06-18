@@ -458,6 +458,7 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
           statusAsDot
           hideTypeBadge
           onDrillDown={(child) => openEntityInDrawer(child)}
+          onOpenEntity={(child) => handleChildDrillDown(child)}
           onOpenChildren={(type) => openChildrenPanel(type)}
           onPackageClick={(pkg) => setSelectedPkg({
             id: pkg.id,

@@ -33,6 +33,7 @@ export { CurrentLeftNav, CurrentLeftNavLogOutIcon } from './CurrentLeftNav/index
 export { PageHeader } from './PageHeader/index.js'
 export {
   ScopeNavigator,
+  ScopeTree,
   defaultTypeConfig,
   defaultStatusConfig,
   defaultSortOptions,

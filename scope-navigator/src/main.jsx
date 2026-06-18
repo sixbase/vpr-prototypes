@@ -4,17 +4,20 @@ import './index.css'
 import App from './App.jsx'
 import PasswordGate from './PasswordGate.jsx'
 import SymphonyShell from './shell/SymphonyShell.jsx'
+import MspShell from './shell/MspShell.jsx'
 
-// New "corner": the Symphony × Scope shell renders only at ?view=shell (or /shell).
-// Everything else is the existing app, untouched. Delete this block + the shell/
-// folder + the import above to revert completely.
+// Gated "corners": the Symphony × Scope shell at ?view=shell (horizontal scope bar),
+// and the MSP shell at ?view=msp (scope navigator as a vertical breadcrumb in the
+// left nav). Everything else is the existing app, untouched.
 const params = new URLSearchParams(window.location.search)
-const isShell = params.get('view') === 'shell' || window.location.pathname.replace(/\/+$/, '').endsWith('/shell')
+const cleanPath = window.location.pathname.replace(/\/+$/, '')
+const isMsp = params.get('view') === 'msp' || cleanPath.endsWith('/msp')
+const isShell = params.get('view') === 'shell' || cleanPath.endsWith('/shell')
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <PasswordGate>
-      {isShell ? <SymphonyShell /> : <App />}
+      {isMsp ? <MspShell /> : isShell ? <SymphonyShell /> : <App />}
     </PasswordGate>
   </StrictMode>,
 )

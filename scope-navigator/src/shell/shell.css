@@ -126,3 +126,66 @@ html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 /* Hide nav scrollbars so the active-bar margins stay symmetric. */
 .ob-scroll-dark, .ob-scroll-light { scrollbar-width: none; -ms-overflow-style: none; }
 .ob-scroll-dark::-webkit-scrollbar, .ob-scroll-light::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ============================================================================
+   ScopeTree — the vertical scope breadcrumb in the MSP left nav (Figma 73:350).
+   Chrome colors use the fixed midnight ramp (theme-stable, always-navy nav).
+   ========================================================================== */
+/* Root "Customers" row: 32px tile + name; bare pill that hovers/selects like a nav row. */
+.stree-row { position: relative; z-index: 1; display: flex; align-items: center; gap: 16px; width: 100%; border-radius: 5px; background: transparent; transition: background-color 120ms ease; }
+.stree-row--root { padding: 8px; }
+.stree-row:not(.stree-row--root) { padding: 4px 8px 4px 4px; }
+.stree-row:not(.stree-row--active):hover,
+.stree-row--open { background: var(--vds-midnight-800); }   /* #152E51 */
+.stree-row--root.stree-row--sel { background: #0068cb; }    /* active = azure, like Overview */
+
+.stree-main { display: flex; flex: 1; min-width: 0; align-items: center; gap: 8px; border: 0; background: transparent; padding: 0; font: inherit; text-align: left; cursor: pointer; color: inherit; }
+.stree-main:disabled { cursor: default; }
+.stree-tile { width: 32px; height: 32px; display: block; flex-shrink: 0; }
+.stree-tile--fallback { border-radius: 6px; background: var(--vds-midnight-700); }
+
+.stree-label { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; font-weight: 500; color: var(--vds-midnight-400); }   /* ancestor = #618bc2 */
+.stree-label--root { font-size: 14px; font-weight: 600; color: var(--vds-white); }
+.stree-label--active { color: var(--vds-white); }
+/* The root tile scales up on hover, matching the product tiles. */
+.stree-row--root .stree-tile { transition: transform 150ms ease; }
+.stree-row--root:hover .stree-tile { transform: scale(1.1); }
+
+/* drill caret (Figma 73:368/73:375): a 16px chevron-in-a-circle. At rest the circle
+   blends into the well and only the muted arrow (#3d68a4) shows; on ROW hover (or when
+   the flyout is open) the circle fills #2B5288 (midnight-600) and the arrow turns white. */
+.stree-caret { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: 0; padding: 0; background: transparent; color: #3d68a4; cursor: pointer; flex-shrink: 0; transition: color 120ms ease, background-color 120ms ease; }
+.stree-row:hover .stree-caret,
+.stree-caret:hover,
+.stree-caret--open { background: var(--vds-midnight-600); color: var(--vds-white); }
+/* On the azure-selected root row the rest arrow needs contrast against the blue. */
+.stree-row--sel .stree-caret { color: color-mix(in srgb, var(--vds-white) 75%, transparent); }
+
+/* The recessed trail well + its connecting line (Figma 73:361/73:362). The line is a
+   2px DOTTED stroke (#618BC2, dash 0.01/4) that runs BEHIND the chips (z-index 0,
+   under the z-index:1 rows) so the chips sit on top of it. */
+.stree-well { background: var(--vds-midnight-1000); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+/* The wrapper is a normal block sized by top/bottom (an inline <svg> ignores
+   `bottom` and uses its intrinsic height, which overran the well). The svg fills it. */
+.stree-line { position: absolute; left: 23px; top: 24px; bottom: 24px; width: 2px; z-index: 0; }
+.stree-line svg { display: block; width: 2px; height: 100%; overflow: visible; }
+/* Round dots: a 0.01/4 dash with round caps renders as 2px circles (Figma 73:362). */
+.stree-line line { stroke: var(--vds-midnight-400); stroke-width: 2; stroke-dasharray: 0.01 4; stroke-linecap: round; }
+
+/* PRODUCTS list re-enter animation when the scoped customer's subscriptions change. */
+@keyframes nav-products-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.nav-products-anim { animation: nav-products-in 280ms cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) { .nav-products-anim { animation: none; } }
+
+/* Simulated "loading this customer's subscriptions" — shimmering skeleton placeholders
+   shown briefly when scoping between customers, so the menu change reads as a fetch. */
+@keyframes nav-skel-shimmer { 0% { background-position: -240px 0; } 100% { background-position: 240px 0; } }
+.nav-skel {
+  background: linear-gradient(90deg, var(--vds-midnight-800) 25%, var(--vds-midnight-700) 50%, var(--vds-midnight-800) 75%);
+  background-size: 480px 100%;
+  animation: nav-skel-shimmer 1.15s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .nav-skel { animation: none; } }
+
+/* 24px chips in the trail (the shared chip ships md=28). */
+.vds-scope-tree .vds-scope__chip--md { width: 24px; height: 24px; }
