@@ -307,18 +307,24 @@ function SymphonyMenu({ collapsed, page, openIds, onToggleProduct, onSelectItem,
             return (
               // Same card structure in both states — collapsing only hides labels + narrows
               // the rail, so the sub-page icons stay put on the x-axis (no horizontal jump).
-              <div key={p.id} style={PRODUCT_CARD}>
+              // gap:0 — the header→sub-items gap lives INSIDE the accordion (paddingTop) so it
+              // animates away too, and the closed card is exactly header-height (like SAT/Archive).
+              <div key={p.id} style={{ ...PRODUCT_CARD, gap: 0 }}>
                 <ProductHeader product={p} collapsed={collapsed} open={open}
                   onToggle={() => onToggleProduct(p.id)} onOpen={() => onOpenWorkspace(p.id)} />
-                {open && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {p.items.map((it) => (
-                      <MenuItem key={it.id} collapsed={collapsed} icon={<it.icon size={16} />} label={it.label} labelSize={13} color={C.ink}
-                        selected={page === it.id} ariaCurrent={page === it.id ? 'page' : undefined} onClick={() => onSelectItem(it.id)} />
-                    ))}
-                    <MenuItem collapsed={collapsed} icon={<ArrowUpRight size={16} />} label="Full Portal" labelSize={11} labelWeight={400} color={C.inkDim} fp onClick={() => onOpenWorkspace(p.id)} />
+                {/* Accordion: animate open/closed via grid-template-rows 0fr↔1fr (no fixed
+                    height needed; works the same in the collapsed icon rail and expanded nav). */}
+                <div style={{ display: 'grid', gridTemplateRows: open ? '1fr' : '0fr', transition: `grid-template-rows 220ms ${OB_EASE}` }}>
+                  <div style={{ overflow: 'hidden', minHeight: 0 }} aria-hidden={!open}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 8, opacity: open ? 1 : 0, transition: 'opacity 180ms ease' }}>
+                      {p.items.map((it) => (
+                        <MenuItem key={it.id} collapsed={collapsed} icon={<it.icon size={16} />} label={it.label} labelSize={13} color={C.ink}
+                          selected={page === it.id} ariaCurrent={page === it.id ? 'page' : undefined} onClick={() => onSelectItem(it.id)} />
+                      ))}
+                      <MenuItem collapsed={collapsed} icon={<ArrowUpRight size={16} />} label="Full Portal" labelSize={11} labelWeight={400} color={C.inkDim} fp onClick={() => onOpenWorkspace(p.id)} />
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             )
           })}
