@@ -44,6 +44,7 @@ export function ScopeTree({
   rootItems = [],
   rootLabel = 'Customers',
   rootTile,
+  rootTileNode,
   rootSelected = false,
   onSelectRoot,
   collapsed = false,
@@ -130,7 +131,9 @@ export function ScopeTree({
           aria-current={rootSelected ? 'page' : undefined}
           title={rootLabel}
         >
-          {rootTile ? (
+          {rootTileNode ? (
+            rootTileNode
+          ) : rootTile ? (
             <img src={rootTile} alt="" className="stree-tile" />
           ) : (
             <span className="stree-tile stree-tile--fallback" />

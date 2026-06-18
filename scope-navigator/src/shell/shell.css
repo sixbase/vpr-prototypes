@@ -22,7 +22,7 @@
 /* Product cards: the header pill itself stays flat; only the chevron's 24px container
    reacts on hover (per Figma 53:8494). Rest: transparent container, #3d68a4 arrow.
    Hover: container fills #152E51, arrow goes white. */
-.ob-chevc { background: transparent; color: #3d68a4; transition: color 120ms ease; }
+.ob-chevc { background: transparent; color: var(--vds-midnight-500); transition: color 120ms ease; }
 
 /* Product hover acts on the ICON itself (no pill fill): the 32px tile scales up. `button`
    excludes the locked SAT/Archive divs (not clickable). Works in both the expanded and
@@ -30,11 +30,14 @@
 .ob-ptile { transition: transform 150ms ease; }
 button.ob-phead:hover .ob-ptile { transform: scale(1.1); }
 button.ob-phead:hover .ob-chevc { color: var(--vds-white); }
-.ob-phead--sel { background: #0068cb; }   /* active bare button (Figma 53:8508) */
+.ob-phead--sel { background: var(--nav-accent); }   /* active bare button (Figma 53:8508) — follows brand */
 
-/* Placeholder page-header buttons (Figma 53:8072): primary azure, slight darken on hover. */
+/* Placeholder page-header buttons (Figma 53:8072): primary accent, slight darken on hover. */
 .ob-hbtn { transition: background-color 120ms ease; }
-.ob-hbtn:hover { background: color-mix(in srgb, #0068cb 88%, black) !important; }
+.ob-hbtn:hover { background: color-mix(in srgb, var(--nav-accent) 88%, black) !important; }
+
+/* Reseller-theme dropdown rows (dark navy popover). */
+.ob-brand-item:hover { background: var(--vds-midnight-800) !important; }
 
 /* Product switcher reads as a dropdown control: a clearer hover than the nav rows,
    and it stays lit while the menu is open. (Same specificity as the generic
@@ -120,7 +123,10 @@ html.dark .shell-customers {
    (graphite-50). Dark mode deepens it to the darkest midnight-1000 so the cards
    (midnight-900 surface) read as raised surfaces against it — like the white cards on
    light-grey canvas in light mode. The surrounding chrome stays the brand midnight-950. */
-.shell-root { --shell-canvas: var(--vds-canvas); }
+/* Reseller-theme defaults (the VIPRE look). --nav-accent is the literal cobalt #0068cb
+   (the cobalt *token* isn't in the loaded bundle); --tile-edge is the product-tile's
+   bright border highlight. brandStyleVars() overrides these per reseller brand. */
+.shell-root { --shell-canvas: var(--vds-canvas); --nav-accent: #0068cb; --tile-edge: #3EB3F0; }
 html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 
 /* Hide nav scrollbars so the active-bar margins stay symmetric. */
@@ -137,7 +143,7 @@ html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 .stree-row:not(.stree-row--root) { padding: 4px 8px 4px 4px; }
 .stree-row:not(.stree-row--active):hover,
 .stree-row--open { background: var(--vds-midnight-800); }   /* #152E51 */
-.stree-row--root.stree-row--sel { background: #0068cb; }    /* active = azure, like Overview */
+.stree-row--root.stree-row--sel { background: var(--nav-accent); }    /* active — follows brand */
 
 .stree-main { display: flex; flex: 1; min-width: 0; align-items: center; gap: 8px; border: 0; background: transparent; padding: 0; font: inherit; text-align: left; cursor: pointer; color: inherit; }
 .stree-main:disabled { cursor: default; }
@@ -154,7 +160,7 @@ html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 /* drill caret (Figma 73:368/73:375): a 16px chevron-in-a-circle. At rest the circle
    blends into the well and only the muted arrow (#3d68a4) shows; on ROW hover (or when
    the flyout is open) the circle fills #2B5288 (midnight-600) and the arrow turns white. */
-.stree-caret { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: 0; padding: 0; background: transparent; color: #3d68a4; cursor: pointer; flex-shrink: 0; transition: color 120ms ease, background-color 120ms ease; }
+.stree-caret { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: 0; padding: 0; background: transparent; color: var(--vds-midnight-500); cursor: pointer; flex-shrink: 0; transition: color 120ms ease, background-color 120ms ease; }
 .stree-row:hover .stree-caret,
 .stree-caret:hover,
 .stree-caret--open { background: var(--vds-midnight-600); color: var(--vds-white); }
