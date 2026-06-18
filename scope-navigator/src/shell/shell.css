@@ -5,7 +5,9 @@
    so they don't touch the rest of the app. */
 .obrow { font: inherit; background: transparent; }
 .obrow-pill { transition: background-color 120ms ease; }
-.obrow:not(.obrow--name):not([aria-current]):hover .obrow-pill { background: color-mix(in srgb, var(--vds-white) 10%, transparent); }
+/* white-alpha hover is for dark-context .obrow rows ONLY — exclude .obrow--light, else this
+   higher-specificity rule wins and the light nav's hover is white-on-white (invisible). */
+.obrow:not(.obrow--name):not(.obrow--light):not([aria-current]):hover .obrow-pill { background: color-mix(in srgb, var(--vds-white) 10%, transparent); }
 .obrow--light:not([aria-current="page"]):hover .obrow-pill { background: color-mix(in srgb, var(--vds-ink) 7%, transparent); }
 
 /* Symphony nav rows (Figma 48:6476). Base rules give a transparent rest bg (also
