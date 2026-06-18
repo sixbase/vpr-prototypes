@@ -70,7 +70,9 @@ const PRODUCT_CARD = { background: 'var(--vds-midnight-1000)', borderRadius: 8, 
 const NAV_PAD_X = 16   // section horizontal padding (Figma px-16)
 
 const POR_PAD = 32
-const POR_W_COLLAPSED = 56
+// Collapsed rail = 2 × the icon-column center (POR_PAD 32 + 8 = 40), matching the Symphony
+// menu — so portal rows keep the SAME x when collapsing instead of sliding to center.
+const POR_W_COLLAPSED = 80
 const POR_W_EXPANDED = 200
 const OB_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
 const SLIDE_MS = 300
@@ -227,8 +229,10 @@ function ProductHeader({ product, collapsed, open, onToggle, onOpen, bare, selec
 
 /* ---- Workspace-nav row (light) ---- */
 function PortalRow({ iconSize = 16, icon, label, labelSize = 12, labelWeight = 500, selected, collapsed, onClick, ariaLabel }) {
-  const pillPad = collapsed ? 4 : 6
-  const base = collapsed ? (POR_W_COLLAPSED - iconSize) / 2 : POR_PAD
+  const pillPad = 8   // matches Symphony's 8px row inset; icon x is unaffected (base - pillPad + pillPad = base)
+  // base (icon-column left) stays at POR_PAD in both states — the icon never slides on x;
+  // only the label collapses and the rail narrows (no horizontal jump on collapse/expand).
+  const base = POR_PAD
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag
@@ -243,8 +247,8 @@ function PortalRow({ iconSize = 16, icon, label, labelSize = 12, labelWeight = 5
       }}
     >
       <span className="obrow-pill" style={{
-        display: 'flex', flex: 1, minWidth: 0, alignItems: 'center', borderRadius: 6,
-        paddingTop: 4, paddingBottom: 4, paddingLeft: pillPad, paddingRight: collapsed ? pillPad : 8,
+        display: 'flex', flex: 1, minWidth: 0, alignItems: 'center', borderRadius: 5,
+        paddingTop: 8, paddingBottom: 8, paddingLeft: pillPad, paddingRight: collapsed ? pillPad : 8,
         transition: `padding 220ms ${OB_EASE}, background-color 120ms ease`,
         ...(selected ? { background: C.selected } : {}),
       }}>
@@ -358,7 +362,7 @@ function WorkspaceNav({ product, page, collapsed, onToggleCollapse, onSelectPage
       transition: `width 220ms ${OB_EASE}`,
       ...style,
     }}>
-      <div className="ob-scroll-light" style={{ padding: '12px 0 8px', overflowY: 'auto', overflowX: 'visible', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="ob-scroll-light" style={{ padding: '12px 0 8px', overflowY: 'auto', overflowX: 'visible', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* back to Symphony */}
         <PortalRow iconSize={16} collapsed={collapsed} label="Symphony" labelWeight={500}
           onClick={onHome} ariaLabel="Back to Symphony" icon={<ChevronLeft size={16} />} />
@@ -376,7 +380,7 @@ function WorkspaceNav({ product, page, collapsed, onToggleCollapse, onSelectPage
               border: 0, background: 'transparent', cursor: 'pointer', color: C.portalInk, fontFamily: 'inherit',
               transition: `padding 220ms ${OB_EASE}`,
             }}>
-            <span className="obrow-pill" style={{ display: 'flex', flex: 1, minWidth: 0, alignItems: 'center', borderRadius: 6, padding: collapsed ? '4px' : '4px 8px 4px 6px' }}>
+            <span className="obrow-pill" style={{ display: 'flex', flex: 1, minWidth: 0, alignItems: 'center', borderRadius: 5, padding: collapsed ? '8px' : '8px 8px 8px 6px' }}>
               <span style={{ width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <ProductGlyph size={16} style={{ color: C.portalInk }} />
               </span>
@@ -416,8 +420,8 @@ function WorkspaceNav({ product, page, collapsed, onToggleCollapse, onSelectPage
         {def.sections.map((sec) => (
           <div key={sec.label} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <div style={{
-              fontSize: 10, letterSpacing: '0.3px', textTransform: 'uppercase', color: C.portalEyebrow,
-              overflow: 'hidden', whiteSpace: 'nowrap', paddingLeft: POR_PAD, marginBottom: 4,
+              fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: C.portalEyebrow,
+              overflow: 'hidden', whiteSpace: 'nowrap', paddingLeft: POR_PAD, marginBottom: 8,
               opacity: collapsed ? 0 : 1, transition: 'opacity 150ms ease',
             }}>{sec.label}</div>
             {sec.items.map((it) => {
