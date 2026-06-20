@@ -15,10 +15,12 @@ import { useBrand, brandStyleVars, BrandLogo, BrandPicker } from './branding.jsx
 import { mockData } from '../data'
 import { ProvisioningModal, SuccessToast } from '../ProvisioningModal'
 import CustomerManagementPageB from '../CustomerManagementPageB'
+import { ChildrenListView } from '../EntityDetail.jsx'
+import { EntityDataDrawer } from '../DashboardPageB'
 import { PORTALS } from './portalData.js'
 import lockBadge from './assets/lock-badge.svg'
 import { PRODUCT_GLYPHS } from './productGlyphs.js'
-import { ProductTile, OverviewTile, CustomersTile } from './ProductTile.jsx'
+import { ProductTile, OverviewTile, CustomersTile, DashboardTile } from './ProductTile.jsx'
 import './shell.css'
 
 /* ============================================================================
@@ -103,6 +105,9 @@ const FOOTER = [
   { id: 'profile', label: 'Profile', icon: User },
 ]
 const PRODUCTS_OVERVIEW = { id: 'products-overview', label: 'Overview', icon: Boxes, Tile: OverviewTile }
+// PARTNERS Dashboard tile — bare button above the scope tree; opens the My Accounts
+// dashboard (the content the Customers scope-tree root used to host).
+const PARTNER_DASHBOARD = { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, Tile: (props) => <DashboardTile {...props} outline /> }
 
 // ---- Faked per-customer subscriptions ----
 // We don't have real entitlement data, so the Symphony nav's PRODUCTS section is
@@ -232,16 +237,19 @@ function ShellNav({
       fontFamily: 'var(--vds-font-sans)', transition: `width 220ms ${OB_EASE}`,
     }}>
       <div className="ob-scroll-dark" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0, padding: 0, overflowY: 'auto', overflowX: 'hidden' }}>
-        {/* PARTNERS — the scope navigator as a vertical breadcrumb */}
+        {/* PARTNERS — a Dashboard tile, then the scope navigator as a vertical breadcrumb */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: `16px ${px}px` }}>
           <Eyebrow collapsed={collapsed}>PARTNERS</Eyebrow>
+          <ProductHeader product={PARTNER_DASHBOARD} collapsed={collapsed} bare
+            selected={page === 'dashboard'} onOpen={() => onSelectItem('dashboard')} />
           <ScopeTree
             path={path}
             onNavigate={onNavigate}
             rootItems={mockData}
             rootLabel="Customers"
             rootTileNode={<CustomersTile className="stree-tile" />}
-            rootSelected={page === 'customers'}
+            rootSelected={page === 'customers' && path.length === 0}
+            rootDrillable={false}
             onSelectRoot={onSelectRoot}
             collapsed={collapsed}
             typeConfig={SCOPE_TYPE_CONFIG}
@@ -366,6 +374,7 @@ function ContentCard({ page }) {
 }
 
 function labelOf(id) {
+  if (id === 'dashboard') return 'Dashboard'
   if (id === 'customers') return 'Customers'
   for (const p of PRODUCTS) for (const it of p.items || []) if (it.id === id) return it.label
   for (const key in PORTALS) for (const s of PORTALS[key].sections) for (const it of s.items) if (it.id === id) return it.label
@@ -373,6 +382,7 @@ function labelOf(id) {
   return 'Overview'
 }
 function iconOf(id) {
+  if (id === 'dashboard') return LayoutDashboard
   if (id === 'customers') return Building2
   for (const p of PRODUCTS) for (const it of p.items || []) if (it.id === id) return it.icon
   for (const key in PORTALS) for (const s of PORTALS[key].sections) for (const it of s.items) if (it.id === id) return it.icon
@@ -652,8 +662,14 @@ function ShellInner() {
   const [provModal, setProvModal] = useState(null)
   const [toast, setToast] = useState(null)
   const [collapsed, setCollapsed] = useState(false)
-  const [page, setPage] = useState('customers')
+  const [page, setPage] = useState('dashboard')
   const [openProducts, setOpenProducts] = useState(() => Object.fromEntries(PRODUCTS.map((p) => [p.id, true])))
+  // Clicking any row on the Customers page opens this entity-data drawer (dist/reseller/customer).
+  const [customerDrawer, setCustomerDrawer] = useState(null)
+  // "Open" on a row/drawer renders that entity's detail ON the Customers surface (keeps
+  // Customers active). null = the browsable list; an entity = its detail. Cleared when the
+  // scope tree navigates (back to the list) or when Dashboard (the fixed overview) is opened.
+  const [customerDetail, setCustomerDetail] = useState(null)
 
   // The scoped entity drives the faked product subscriptions shown in the nav.
   const leafId = path.at(-1)?.id ?? 'root'
@@ -665,7 +681,7 @@ function ShellInner() {
   // fall back to that customer's dashboard so you never sit on a locked product.
   useEffect(() => {
     const owner = productOfPage(page)
-    if (owner && !subscriptionFor(leafId).has(owner)) setPage('customers')
+    if (owner && !subscriptionFor(leafId).has(owner)) setPage('dashboard')
   }, [leafId, page])
 
   // Simulated "loading this customer's subscriptions": on a scope change, show the nav
@@ -720,12 +736,23 @@ function ShellInner() {
         <ShellNav
           collapsed={collapsed} page={page} openIds={openProducts}
           onToggleProduct={(id) => setOpenProducts((o) => ({ ...o, [id]: !o[id] }))}
-          onSelectItem={setPage}
+          onSelectItem={(id) => {
+            // Dashboard is the fixed "My Accounts" overview — opening it resets the scope
+            // to root and drops any open entity detail so it never reflects a drilled customer.
+            if (id === 'dashboard') { navigate([]); setCustomerDetail(null) }
+            setPage(id)
+          }}
           onOpenPortal={openPortalFor}
           onToggleCollapse={() => setCollapsed((c) => !c)}
           dark={dark} onToggleDark={() => setDark((d) => !d)}
-          path={path} onNavigate={(nextPath) => { navigate(nextPath); setPage('customers') }}
-          onSelectRoot={() => { navigate([]); setPage('customers') }}
+          path={path} onNavigate={(nextPath) => {
+            navigate(nextPath); setPage('customers')
+            // Clicking the already-selected leaf (same path) opens that customer's detail;
+            // navigating up to an ancestor (shorter path) returns to the browse list.
+            const sameLeaf = nextPath.length > 0 && nextPath.length === path.length && nextPath.at(-1)?.id === path.at(-1)?.id
+            setCustomerDetail(sameLeaf ? nextPath.at(-1) : null)
+          }}
+          onSelectRoot={() => { navigate([]); setCustomerDetail(null); setPage('customers') }}
           subscribed={subscribed} loading={navLoading}
         />
 
@@ -734,21 +761,58 @@ function ShellInner() {
         <div style={{ flex: 1, minWidth: 0, display: 'flex', background: 'var(--vds-midnight-1000)', paddingLeft: 8, paddingTop: 8 }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
             {/* Scope/entity bar — only on product pages (reached from the product menu). The
-                Customers page carries its own "Customers" header, so the bar is hidden there
-                and the body takes over the rounded top-left corner. */}
-            {page !== 'customers' && <ScopeHeader path={path} />}
-            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', background: C.content, ...(page === 'customers' ? { borderRadius: '32px 0 0 0', overflow: 'hidden' } : {}) }}>
-              {page === 'customers' ? (
+                Dashboard and Customers partner pages carry their own header, so the bar is
+                hidden there and the body takes over the rounded top-left corner. */}
+            {page !== 'customers' && page !== 'dashboard' && <ScopeHeader path={path} />}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', background: C.content, ...((page === 'customers' || page === 'dashboard') ? { borderRadius: '32px 0 0 0', overflow: 'hidden' } : {}) }}>
+              {page === 'dashboard' ? (
                 <div className="shell-customers" style={{ flex: 1, minWidth: 0, background: C.content, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ width: 32, height: 32, borderRadius: 8, background: 'color-mix(in srgb, var(--vds-ink) 7%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Building2 size={18} style={{ color: 'var(--vds-ink-muted)' }} />
-                    </span>
-                    <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>Customers</span>
+                    <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>Dashboard</span>
                   </div>
                   <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', margin: '0 -24px -20px' }}>
-                    <CustomerManagementPageB openModal={openModal} showFuture={false} />
+                    <CustomerManagementPageB openModal={openModal} showFuture={false} rootNameOverride="My Accounts" hideRootStatus />
                   </div>
+                </div>
+              ) : page === 'customers' ? (
+                <div className="shell-customers" style={{ flex: 1, minWidth: 0, background: C.content, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {customerDetail && (
+                      <button
+                        aria-label="Back to Customers"
+                        onClick={() => {
+                          const idx = path.findIndex((e) => e.id === customerDetail.id)
+                          navigate(idx >= 0 ? path.slice(0, idx) : path.slice(0, -1))
+                          setCustomerDetail(null)
+                        }}
+                        style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, color: 'var(--vds-ink-muted)' }}
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                    )}
+                    <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>Customers</span>
+                  </div>
+                  {customerDetail ? (
+                    /* An entity was "Opened" — its full detail takes over the Customers surface
+                       (Customers stays the active nav item; Dashboard remains the fixed overview). */
+                    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', margin: '0 -24px -20px' }}>
+                      <CustomerManagementPageB openModal={openModal} showFuture={false} />
+                    </div>
+                  ) : (
+                    /* Browse mode — the same descendants list the dashboard's KPI-card drawer
+                       renders (ChildrenListView), hosted inline. */
+                    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: C.card, border: `1px solid ${C.line}`, borderRadius: 12, overflow: 'hidden' }}>
+                      <ChildrenListView
+                        entity={path.at(-1) ?? { type: 'root', name: 'My Accounts', children: mockData }}
+                        filter={null}
+                        onDrillDown={(child) => setCustomerDrawer(child)}
+                        onOpen={(child) => { navigate([...path, child]); setCustomerDetail(child); setPage('customers') }}
+                        hideHeader hideTypeBadge statusAsDot showManagementFilter subtleUnmanaged typeTitle
+                        labelOverrides={{ partner: 'Reseller' }}
+                        tileFor={(type) => SCOPE_TYPE_CONFIG[type]?.tile}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <ContentCard page={page} />
@@ -772,6 +836,16 @@ function ShellInner() {
         />
       )}
       {toast && <SuccessToast message={toast} onDismiss={() => setToast(null)} />}
+
+      {/* Entity-data drawer — opened by clicking any row on the Customers page.
+          Same slide-out entity detail the dashboard's descendants drawer uses.
+          "Open" drills the scope and populates the Customers surface with that entity's detail. */}
+      <EntityDataDrawer
+        entity={customerDrawer}
+        siblings={path.at(-1)?.children ?? mockData}
+        onOpenEntity={(e) => { navigate([...path, e]); setCustomerDetail(e); setCustomerDrawer(null); setPage('customers') }}
+        onClose={() => setCustomerDrawer(null)}
+      />
     </div>
   )
 }

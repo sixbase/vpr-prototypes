@@ -44,6 +44,21 @@ export function OverviewTile({ size = 32, className, style }) {
     </svg>
   )
 }
+// `outline` renders the 4 panels as strokes instead of solid fills (used by the MSP shell).
+export function DashboardTile({ size = 32, className, style, outline = false }) {
+  const blockProps = outline
+    ? { fill: 'none', stroke: '#E3E3E3', strokeWidth: 1.5 }
+    : { fill: '#E3E3E3' }
+  return (
+    <svg width={size} height={size} viewBox="1 0.5 32 32" fill="none" className={className} style={{ display: 'block', ...style }} aria-hidden="true">
+      <rect x="1" y="0.5" width="32" height="32" rx="8" style={{ fill: 'var(--vds-midnight-800)' }} />
+      <rect x="9" y="8.5" width="6.5" height="9" rx="1.5" {...blockProps} />
+      <rect x="18.5" y="8.5" width="6.5" height="5.5" rx="1.5" {...blockProps} />
+      <rect x="9" y="19.5" width="6.5" height="5.5" rx="1.5" {...blockProps} />
+      <rect x="18.5" y="16" width="6.5" height="9" rx="1.5" {...blockProps} />
+    </svg>
+  )
+}
 export function CustomersTile({ size = 32, className, style }) {
   return (
     <svg width={size} height={size} viewBox="1 0.5 32 32" fill="none" className={className} style={{ display: 'block', ...style }} aria-hidden="true">
