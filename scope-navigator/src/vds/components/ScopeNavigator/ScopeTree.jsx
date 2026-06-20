@@ -34,6 +34,7 @@ import { TypeChip, getDropdownHeader, DropdownPopover } from './parts.jsx'
  * - rootLabel:     root row label                       (default 'Customers')
  * - rootTile:      <img src> for the root's 32px tile   (optional)
  * - rootSelected:  highlight the root row as active     (default false)
+ * - rootDrillable: show the root caret (drill from root) (default true)
  * - onSelectRoot:  () => void — root body click (open MSP prototype)
  * - collapsed:     icon-only rail                       (default false)
  * - typeConfig / statusConfig / sortOptions: taxonomy (Vipre defaults)
@@ -46,6 +47,7 @@ export function ScopeTree({
   rootTile,
   rootTileNode,
   rootSelected = false,
+  rootDrillable = true,
   onSelectRoot,
   collapsed = false,
   typeConfig = defaultTypeConfig,
@@ -143,7 +145,7 @@ export function ScopeTree({
           )}
           {!collapsed && <span className="stree-label stree-label--root">{rootLabel}</span>}
         </button>
-        {!collapsed && rootSeg.dropdownItems.length > 0 && (
+        {!collapsed && rootDrillable && rootSeg.dropdownItems.length > 0 && (
           <button
             type="button"
             className={cx('stree-caret', flyout?.id === 'root' && 'stree-caret--open')}

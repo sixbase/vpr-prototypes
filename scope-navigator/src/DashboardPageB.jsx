@@ -307,7 +307,67 @@ function PackageDetail({ pkg, scope, onClose }) {
   );
 }
 
-export default function DashboardPageB({ externalFilter, onExternalFilterChange, onDrillDown, onViewAll, showFuture = false, openModal } = {}) {
+// Standalone "customer data" drawer — the same slide-out entity detail the dashboard
+// renders inside its descendants drawer, packaged for callers that already have the
+// entity in hand (e.g. the MSP Customers list). Open it by passing `entity`; pass null
+// to close. `onOpenEntity` powers the top-bar "Open" affordance. The package slide and
+// step-by-step drill (breadcrumb) work exactly as they do on the dashboard.
+export function EntityDataDrawer({ entity, siblings = [], showFuture = false, onOpenEntity, onClose }) {
+  // Drill stack inside the drawer — each entry is { entity, filter }, seeded with the
+  // opened entity. Kept mounted while the drawer slides out (we only reseed on open),
+  // so the content doesn't blank mid-animation.
+  const [stack, setStack] = useState([]);
+  const [pkg, setPkg] = useState(null);
+  useEffect(() => {
+    if (entity) { setStack([{ entity, filter: null }]); setPkg(null); }
+  }, [entity?.id]);
+
+  const top = stack.length ? stack[stack.length - 1] : null;
+  const shownEntity = top?.entity ?? null;
+  const shownFilter = top?.filter ?? null;
+
+  const crumbs = stack.map((s, i) => ({
+    key: s.entity.id,
+    label: s.entity.name,
+    onClick: i < stack.length - 1 ? () => setStack(st => st.slice(0, i + 1)) : undefined,
+  }));
+
+  function back() {
+    if (pkg) { setPkg(null); return; }
+    if (stack.length > 1) { setStack(st => st.slice(0, -1)); return; }
+    onClose();
+  }
+
+  return (
+    <Drawer open={!!entity} onClose={onClose} wide>
+      {shownEntity && (
+        <div className="flex flex-col h-full">
+          <DrawerTopBar
+            crumbs={crumbs}
+            onBack={back}
+            showOpen={!!onOpenEntity}
+            onOpen={() => onOpenEntity(shownEntity)}
+          />
+          <div className="flex-1 min-h-0">
+            <DrawerEntityDetail
+              entity={shownEntity}
+              filter={shownFilter}
+              onFilterChange={(f) => setStack(st => st.length ? [...st.slice(0, -1), { ...st[st.length - 1], filter: f }] : st)}
+              pkg={pkg}
+              siblings={siblings}
+              showFuture={showFuture}
+              onDrillDown={(child) => setStack(st => [...st, { entity: child, filter: null }])}
+              onPackageClick={(p) => setPkg(p)}
+              onCustomerDrillDown={(child) => { setPkg(null); setStack(st => [...st, { entity: child, filter: null }]); }}
+            />
+          </div>
+        </div>
+      )}
+    </Drawer>
+  );
+}
+
+export default function DashboardPageB({ externalFilter, onExternalFilterChange, onDrillDown, onViewAll, showFuture = false, openModal, rootNameOverride, hideRootStatus = false } = {}) {
   const { currentEntity, childEntities, path, navigate } = useScope();
   const [internalFilter, setInternalFilter] = useState(null);
   // Retains the last opened type so the drawer keeps rendering its list while
@@ -484,6 +544,8 @@ export default function DashboardPageB({ externalFilter, onExternalFilterChange,
           statusAsDot
           hideTypeBadge
           hideAddProduct
+          rootNameOverride={rootNameOverride}
+          hideRootStatus={hideRootStatus}
           onDrillDown={(child) => handleChildDrillDown(child)}
           onOpenChildren={(type) => openChildrenPanel(type)}
           onPackageClick={(pkg) => setSelectedPkg({

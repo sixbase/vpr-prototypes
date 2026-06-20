@@ -8,7 +8,7 @@ import {
 import { ScopeProvider, useScope } from '../ScopeContext'
 import { ScopeNavigator } from '../vds/components/index.js'
 import { useBrand, brandStyleVars, BrandLogo, BrandPicker } from './branding.jsx'
-import { ProductTile, OverviewTile, CustomersTile } from './ProductTile.jsx'
+import { ProductTile, OverviewTile, CustomersTile, DashboardTile } from './ProductTile.jsx'
 import { PRODUCT_GLYPHS } from './productGlyphs.js'
 import { mockData } from '../data'
 import { ProvisioningModal, SuccessToast } from '../ProvisioningModal'
@@ -131,6 +131,7 @@ const FOOTER = [
 // PARTNERS group (Figma 53:8800): now just Customers, rendered as a bare tile button
 // (32px gradient tile + name), like the standalone Overview. The old Overview leaf is gone.
 const PARTNERS = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, Tile: DashboardTile },
   { id: 'customers', label: 'Customers', icon: Building2, Tile: CustomersTile },
 ]
 // Standalone "Overview" tile that opens the PRODUCTS group (no sub-pages, muted tile).
@@ -581,19 +582,19 @@ function MainView({ params, h }) {
       <div style={{ flex: 1, minWidth: 0, background: C.topbar, display: 'flex' }}>
         {/* body panel: flush to the right/bottom edges, only the top-left corner is rounded (Figma 51:7368). */}
         <div style={{ flex: 1, display: 'flex', minWidth: 0, borderRadius: '32px 0 0 0', overflow: 'hidden' }}>
-          {symphonyPage === 'customers' ? (
+          {symphonyPage === 'dashboard' ? (
             /* Mirror ContentCard 1:1 (same canvas bg, padding 32, header, gap 24). The
                negative-margin wrapper cancels DashboardPageB's own mx-6 (24) / mb-5 (20)
                so its panel lands on the exact same x/y as the placeholder panels. */
             <div className="shell-customers" style={{ flex: 1, minWidth: 0, background: C.content, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ width: 32, height: 32, borderRadius: 8, background: 'color-mix(in srgb, var(--vds-ink) 7%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Building2 size={18} style={{ color: 'var(--vds-ink-muted)' }} />
+                  <LayoutDashboard size={18} style={{ color: 'var(--vds-ink-muted)' }} />
                 </span>
-                <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>Customers</span>
+                <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>Dashboard</span>
               </div>
               <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', margin: '0 -24px -20px' }}>
-                <CustomerManagementPageB openModal={h.onOpenModal} showFuture={false} />
+                <CustomerManagementPageB openModal={h.onOpenModal} showFuture={false} rootNameOverride="My Accounts" hideRootStatus />
               </div>
             </div>
           ) : (

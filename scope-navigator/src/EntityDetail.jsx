@@ -761,7 +761,7 @@ function ComplianceDonut({ score }) {
 // How many list rows to mount per lazy-load page.
 const LIST_PAGE_SIZE = 40;
 
-export function ChildrenListView({ entity, filter, onBack, onDrillDown, onOpen, deep = false, labelOverrides, hideTypeBadge = false, statusAsDot = false, showManagementFilter = false, subtleUnmanaged = false, typeTitle = false, hideHeader = false }) {
+export function ChildrenListView({ entity, filter, onBack, onDrillDown, onOpen, deep = false, labelOverrides, hideTypeBadge = false, statusAsDot = false, showManagementFilter = false, subtleUnmanaged = false, typeTitle = false, hideHeader = false, tileFor }) {
   const [search, setSearch] = useState('');
   // Managed / Unmanaged audience filter (opt-in via showManagementFilter).
   const [mgmtFilter, setMgmtFilter] = useState('all');
@@ -955,8 +955,14 @@ export function ChildrenListView({ entity, filter, onBack, onDrillDown, onOpen, 
                       className="relative flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors cursor-pointer border-b border-zinc-100 dark:border-zinc-800 group"
                       onClick={() => onDrillDown(child)}
                     >
-                      <div className="relative w-7 h-7 rounded-full border border-line-strong flex items-center justify-center flex-shrink-0">
-                        <ChildIcon className={`w-3.5 h-3.5 ${TYPE_DS_GLYPH[child.type] ?? 'text-ink-muted'}`} />
+                      <div className="relative w-7 h-7 flex-shrink-0">
+                        {tileFor?.(child.type) ? (
+                          <img src={tileFor(child.type)} alt="" aria-hidden="true" className="w-7 h-7 object-contain" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full border border-line-strong flex items-center justify-center">
+                            <ChildIcon className={`w-3.5 h-3.5 ${TYPE_DS_GLYPH[child.type] ?? 'text-ink-muted'}`} />
+                          </div>
+                        )}
                         {!subtleUnmanaged && isEntityUnmanaged(child) && (
                           <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-zinc-700 ring-2 ring-white dark:ring-zinc-900 flex items-center justify-center" title="Unmanaged">
                             <CaptionsOff className="w-2 h-2 text-white" strokeWidth={2.5} />
@@ -1429,7 +1435,7 @@ function SummaryStatCard({ label, value, format, sparkSeed, period, variant }) {
 // ══════════════════════════════════════════════════════════════════════
 // Entity identity header — icon, name, status, UUID/region/last-active. Extracted
 // so a drawer can keep it pinned while the body below it drills into datapoints.
-export function EntityIdentityHeader({ entity, scrolled = false, statusAsDot = false, hideTypeBadge = false, connectorBelow = false }) {
+export function EntityIdentityHeader({ entity, scrolled = false, statusAsDot = false, hideTypeBadge = false, connectorBelow = false, rootNameOverride, hideRootStatus = false }) {
   const { Icon, color, bg, ring, label } = typeConfig[entity.type];
   const isUnmanaged = isEntityUnmanaged(entity);
   return (
@@ -1448,7 +1454,7 @@ export function EntityIdentityHeader({ entity, scrolled = false, statusAsDot = f
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">{entity.name}</h2>
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">{entity.type === 'root' && rootNameOverride ? rootNameOverride : entity.name}</h2>
             {!hideTypeBadge && (
               <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[10px] font-medium leading-none dark:bg-zinc-800 dark:text-zinc-400 flex-shrink-0">{label}</span>
             )}
@@ -1458,13 +1464,15 @@ export function EntityIdentityHeader({ entity, scrolled = false, statusAsDot = f
                 Unmanaged
               </span>
             )}
-            <span className="relative flex items-center flex-shrink-0 group/status">
-              <span className={`w-2.5 h-2.5 rounded-full ${statusConfig[entity.status].dot}`} />
-              <span className="pointer-events-none absolute left-0 top-full mt-1.5 z-20 hidden group-hover/status:block whitespace-nowrap rounded-md bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] leading-none px-2 py-1.5 shadow-lg">
-                <span className="font-medium">{statusConfig[entity.status].label}</span>
-                <span className="text-zinc-300"> — {statusConfig[entity.status].desc}</span>
+            {!(entity.type === 'root' && hideRootStatus) && (
+              <span className="relative flex items-center flex-shrink-0 group/status">
+                <span className={`w-2.5 h-2.5 rounded-full ${statusConfig[entity.status].dot}`} />
+                <span className="pointer-events-none absolute left-0 top-full mt-1.5 z-20 hidden group-hover/status:block whitespace-nowrap rounded-md bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] leading-none px-2 py-1.5 shadow-lg">
+                  <span className="font-medium">{statusConfig[entity.status].label}</span>
+                  <span className="text-zinc-300"> — {statusConfig[entity.status].desc}</span>
+                </span>
               </span>
-            </span>
+            )}
           </div>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             {entity.type === 'root' ? (
@@ -1491,7 +1499,7 @@ export function EntityIdentityHeader({ entity, scrolled = false, statusAsDot = f
   );
 }
 
-export default function EntityDetail({ entity, siblings, onDrillDown, onOpenEntity, onAddProduct, showFuture = false, externalFilter, onExternalFilterChange, onViewAll, hideTypeBadge = false, statusAsDot = false, hideContactInfo = false, hideHeader = false, hideAddProduct = false, onPackageClick, onOpenChildren, childListProps = {} }) {
+export default function EntityDetail({ entity, siblings, onDrillDown, onOpenEntity, onAddProduct, showFuture = false, externalFilter, onExternalFilterChange, onViewAll, hideTypeBadge = false, statusAsDot = false, hideContactInfo = false, hideHeader = false, hideAddProduct = false, rootNameOverride, hideRootStatus = false, onPackageClick, onOpenChildren, childListProps = {} }) {
   const { Icon, color, bg, ring, label } = typeConfig[entity.type];
   const hasChildren = entity.children?.length > 0;
   const isLeaf = entity.type === 'customer' || !hasChildren;
@@ -1611,7 +1619,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onOpenEnti
       <div className={`absolute inset-0 flex flex-col transition-opacity duration-150 ease-out ${showChildrenPanel ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       {/* ── Entity header (sticky) ── */}
       {!hideHeader && (
-        <EntityIdentityHeader entity={entity} scrolled={scrolled} statusAsDot={statusAsDot} hideTypeBadge={hideTypeBadge} />
+        <EntityIdentityHeader entity={entity} scrolled={scrolled} statusAsDot={statusAsDot} hideTypeBadge={hideTypeBadge} rootNameOverride={rootNameOverride} hideRootStatus={hideRootStatus} />
       )}
 
       {/* ══════════════════════════════════════════════════════════════
