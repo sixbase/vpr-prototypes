@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Mail, Send, Laptop, GraduationCap, Database, ScrollText, Radar, Settings,
   FileText, ShieldCheck, Monitor, Bell, UserCog, User, ArrowUpRight,
   PanelLeftClose, PanelLeftOpen, LayoutDashboard, Moon, Sun,
-  Building2, Boxes, ChevronLeft, ChevronDown, Check,
+  Boxes, Store, Zap, ChevronLeft, ChevronRight, ChevronDown, Check,
 } from '@icons'
 import { ScopeProvider, useScope } from '../ScopeContext'
 import { ScopeTree } from '../vds/components/index.js'
@@ -420,26 +420,38 @@ function HeaderButtons() {
   )
 }
 
+// Page-title icon — the page's own line glyph (Figma 96:1428): bare, ink-muted, 28px,
+// no background tile. Shared by ContentCard and the Performance/Customers page headers.
+function TitleIcon({ icon: Icon }) {
+  return <Icon size={28} strokeWidth={1.75} style={{ color: 'var(--vds-ink-muted)', flexShrink: 0 }} />
+}
+
 // Figma 73:1272-1277: borderless white cards on the grey body.
 const cardStyle = { flex: 1, minWidth: 0, background: C.card, borderRadius: 8 }
-function ContentCard({ page }) {
+function ContentCard({ page, path }) {
   const PageIcon = iconOf(page)
   const title = labelOf(page)
-  // On a product page the title icon is the product's own gradient tile (Figma 91:1167) —
-  // the same tile shown in the nav — instead of the generic grey page glyph. Non-product
-  // pages (Overview, footer) keep the neutral glyph square.
+  // The title icon is the page's own line glyph (Figma 96:1428) — bare, ink-muted, no
+  // background tile. (pid is still resolved for the breadcrumb's product crumb.)
   const pid = productOfPage(page)
+  // The page header is one unified panel (Figma 96:1381): a breadcrumb, a 1px divider, then
+  // the page-title row — all on the content canvas with 24px gaps. The breadcrumb (scope leaf
+  // → product → page) only shows when a path is supplied (the reseller's scoped views); the
+  // portal and the single-tenant end-customer pass none and render the title row alone.
+  const crumbs = path != null
+    ? [path.at(-1)?.name ?? 'All Customers', pid && PRODUCTS.find((p) => p.id === pid)?.label, title].filter(Boolean)
+    : null
   return (
     <div style={{ flex: 1, minWidth: 0, background: C.content, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
+      {crumbs && (
+        <>
+          <Breadcrumb items={crumbs} />
+          <div style={{ height: 1, width: '100%', background: 'var(--vds-line)', flexShrink: 0 }} />
+        </>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          {pid ? (
-            <span style={{ flexShrink: 0, display: 'flex' }}><ProductTile glyph={PRODUCT_GLYPHS[pid]} size={32} /></span>
-          ) : (
-            <span style={{ width: 32, height: 32, borderRadius: 8, background: 'color-mix(in srgb, var(--vds-ink) 7%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <PageIcon size={18} style={{ color: 'var(--vds-ink-muted)' }} />
-            </span>
-          )}
+          <TitleIcon icon={PageIcon} />
           <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>{title}</span>
         </div>
         <HeaderButtons />
@@ -466,7 +478,8 @@ function labelOf(id) {
 }
 function iconOf(id) {
   if (id === 'dashboard') return LayoutDashboard
-  if (id === 'customers') return Building2
+  if (id === 'customers') return Store
+  if (id === 'products-overview') return Zap
   for (const p of PRODUCTS) for (const it of p.items || []) if (it.id === id) return it.icon
   for (const key in PORTALS) for (const s of PORTALS[key].sections) for (const it of s.items) if (it.id === id) return it.icon
   for (const f of FOOTER) if (f.id === id) return f.icon
@@ -486,82 +499,28 @@ function toScope(path) {
   }
 }
 
-// One chip + name unit, absolutely filling the stage so two can crossfade in place.
-// The chip is the Figma gradient tile (node 78:531); root falls back to a neutral glyph.
-function EntityBlock({ scope, chipRef }) {
-  const Glyph = scope.icon
+/* Page-location breadcrumb (Figma 96:1384): scope leaf → product → current page. Ancestor
+   crumbs are muted (--vds-ink-subtle = #6b7585), the active page is ink, separated by 14px
+   right-chevrons. Shown only in scoped (reseller) views; the first crumb truncates if long. */
+function Breadcrumb({ items }) {
   return (
-    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', gap: 8, willChange: 'transform, opacity' }}>
-      {scope.tile ? (
-        <img ref={chipRef} src={scope.tile} alt="" style={{ width: 24, height: 24, display: 'block', flexShrink: 0 }} />
-      ) : (
-        <span ref={chipRef} style={{ width: 24, height: 24, borderRadius: 6, background: 'color-mix(in srgb, var(--vds-ink) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--vds-ink-muted)' }}>
-          <Glyph size={15} />
-        </span>
-      )}
-      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--vds-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scope.name}</span>
-    </div>
-  )
-}
-
-const SCOPE_SLIDE_MS = 290
-const SCOPE_SLIDE_D = 10
-
-/* The entity bar — the current-scope context header (Figma 73:506). A WHITE surface
-   with the rounded top-left corner; the grey body carries the inset top shadow.
-   The scope name transitions with a DIRECTIONAL slide: drilling deeper, the new name
-   rises in from below; going up the tree, it drops in from above; a sibling switch is
-   a pure crossfade (no depth change). The type chip gives a small scale-pop on any
-   level change. Honors prefers-reduced-motion. */
-function ScopeHeader({ path }) {
-  const scope = toScope(path)
-  const prevRef = useRef(scope)
-  const [trans, setTrans] = useState(null) // { from, dir } during a transition
-  const inRef = useRef(null)
-  const outRef = useRef(null)
-  const chipRef = useRef(null)
-
-  // Detect a scope change and stage the transition (from = the previous scope).
-  useLayoutEffect(() => {
-    const prev = prevRef.current
-    if (prev.key === scope.key) return
-    const dir = scope.depth > prev.depth ? 'deeper' : scope.depth < prev.depth ? 'up' : 'fade'
-    prevRef.current = scope
-    setTrans({ from: prev, dir })
-  }, [scope.key, scope.depth])
-
-  // Run the slide once the transition layers are in the DOM.
-  useLayoutEffect(() => {
-    if (!trans) return
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    if (reduce) { setTrans(null); return }
-    const sgn = trans.dir === 'deeper' ? 1 : trans.dir === 'up' ? -1 : 0
-    const easeOut = 'cubic-bezier(0.4, 0, 0.2, 1)'
-    const easeSpring = 'cubic-bezier(0.22, 1, 0.36, 1)'
-    outRef.current?.animate(
-      [{ transform: 'translateY(0)', opacity: 1 }, { transform: `translateY(${-sgn * SCOPE_SLIDE_D}px)`, opacity: 0 }],
-      { duration: SCOPE_SLIDE_MS, easing: easeOut, fill: 'forwards' },
-    )
-    inRef.current?.animate(
-      [{ transform: `translateY(${sgn * SCOPE_SLIDE_D}px)`, opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }],
-      { duration: SCOPE_SLIDE_MS, easing: easeSpring, fill: 'forwards' },
-    )
-    if (trans.dir !== 'fade') {
-      chipRef.current?.animate(
-        [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }],
-        { duration: SCOPE_SLIDE_MS + 70, easing: 'ease-out' },
-      )
-    }
-    const t = setTimeout(() => setTrans(null), SCOPE_SLIDE_MS + 40)
-    return () => clearTimeout(t)
-  }, [trans])
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', padding: 32, flexShrink: 0, background: 'var(--vds-surface)', borderRadius: '32px 0 0 0' }}>
-      <div style={{ position: 'relative', height: 24, flex: 1, minWidth: 0, overflow: 'hidden' }}>
-        {trans && <div ref={outRef} style={{ position: 'absolute', inset: 0 }}><EntityBlock scope={trans.from} /></div>}
-        <div ref={inRef} style={{ position: 'absolute', inset: 0 }}><EntityBlock scope={scope} chipRef={chipRef} /></div>
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', minWidth: 0 }}>
+      {items.flatMap((label, i) => {
+        const last = i === items.length - 1
+        const nodes = []
+        if (i > 0) nodes.push(
+          <ChevronRight key={`s${i}`} size={14} style={{ color: 'var(--vds-ink-subtle)', flexShrink: 0 }} />,
+        )
+        nodes.push(
+          <span key={`l${i}`} style={{
+            fontSize: 11, fontWeight: 400, lineHeight: 1,
+            color: last ? 'var(--vds-ink)' : 'var(--vds-ink-subtle)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            flexShrink: i === 0 ? 1 : 0, minWidth: i === 0 ? 0 : undefined,
+          }}>{label}</span>,
+        )
+        return nodes
+      })}
     </div>
   )
 }
@@ -905,15 +864,15 @@ function ShellInner() {
             the rounded top-left corner, then the grey body carrying the inset top shadow. */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', background: 'var(--vds-midnight-1000)', paddingLeft: 8, paddingTop: 8 }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
-            {/* Scope/entity bar — only on product pages (reached from the product menu). The
-                Dashboard and Customers partner pages carry their own header, so the bar is
-                hidden there and the body takes over the rounded top-left corner. The
-                end-customer lens is single-tenant (no scope), so the bar never shows. */}
-            {!isCustomer && page !== 'customers' && page !== 'dashboard' && <ScopeHeader path={path} />}
-            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', background: C.content, ...((isCustomer || page === 'customers' || page === 'dashboard') ? { borderRadius: '32px 0 0 0', overflow: 'hidden' } : {}) }}>
+            {/* One grey content panel with the rounded top-left corner. On product pages the
+                scope/entity bar + divider live INSIDE the panel above the page title (Figma
+                91:1135); Dashboard/Customers carry their own header; the single-tenant
+                end-customer lens shows no scope bar. */}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', background: C.content, borderRadius: '32px 0 0 0', overflow: 'hidden' }}>
               {page === 'dashboard' ? (
                 <div className="shell-customers" style={{ flex: 1, minWidth: 0, background: C.content, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <TitleIcon icon={iconOf('dashboard')} />
                     <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>Performance</span>
                   </div>
                   <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', margin: '0 -24px -20px' }}>
@@ -936,6 +895,7 @@ function ShellInner() {
                         <ChevronLeft size={18} />
                       </button>
                     )}
+                    <TitleIcon icon={iconOf('customers')} />
                     <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>Customers</span>
                   </div>
                   {customerDetail ? (
@@ -961,7 +921,7 @@ function ShellInner() {
                   )}
                 </div>
               ) : (
-                <ContentCard page={page} />
+                <ContentCard page={page} path={isCustomer ? undefined : path} />
               )}
               {/* subtle inner shadow just below the entity bar (Figma 73:1251). */}
               <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)' }} />
