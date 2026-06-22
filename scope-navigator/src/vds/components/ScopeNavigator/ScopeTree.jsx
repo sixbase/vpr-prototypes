@@ -51,12 +51,18 @@ export function ScopeTree({
   collapseTrail = false,
   onSelectRoot,
   collapsed = false,
+  tipAsData = false,
   typeConfig = defaultTypeConfig,
   statusConfig = defaultStatusConfig,
   sortOptions = defaultSortOptions,
 }) {
   const typeOrder = Object.keys(typeConfig)
   const statusOrder = Object.keys(statusConfig)
+
+  // Collapsed-rail label hint. By default a native `title`; when tipAsData is set
+  // (the MSP shell), expose it as `data-tip` instead so the shell can render its own
+  // right-anchored tooltip and suppress the cursor-following native one.
+  const tipAttr = (label) => (tipAsData && collapsed ? { 'data-tip': label } : { title: label })
 
   // The single open flyout: { id, top, left, items, header, onSelect, currentEntityId }.
   const [flyout, setFlyout] = useState(null)
@@ -155,7 +161,7 @@ export function ScopeTree({
           onClick={seg.onMain}
           disabled={!seg.onMain}
           aria-current={seg.isActive ? 'page' : undefined}
-          title={seg.label}
+          {...tipAttr(seg.label)}
         >
           <TypeChip tone={cfg?.tone} icon={cfg?.icon} tile={cfg?.tile} size="md" />
           <span className={cx('stree-label', seg.isActive && 'stree-label--active')}>{seg.label}</span>
@@ -184,7 +190,7 @@ export function ScopeTree({
           className="stree-main"
           onClick={onSelectRoot}
           aria-current={rootSelected ? 'page' : undefined}
-          title={rootLabel}
+          {...tipAttr(rootLabel)}
         >
           {rootTileNode ? (
             rootTileNode

@@ -999,13 +999,31 @@ export function ChildrenListView({ entity, filter, onBack, onDrillDown, onOpen, 
                         <ChevronRight className="w-3.5 h-3.5 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-400 dark:group-hover:text-zinc-400 transition-colors flex-shrink-0" />
                       </div>
                       {onOpen && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onOpen(child); }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                        >
-                          Open
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
+                        /* Hover cluster — the right-side meta fades out on hover, so its info
+                           is reintroduced here as legible labeled chips alongside Open. The
+                           status chip (Figma 91:1224) and Unmanaged chip (Figma 91:1220) give
+                           the status dot + unmanaged icon a readable, hover-stable form. */
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="inline-flex items-center gap-px pl-1 pr-2 py-1 rounded border border-[#cbd2dd] dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[11px] font-medium text-zinc-800 dark:text-zinc-200 leading-none flex-shrink-0">
+                            <span className="w-4 h-4 flex items-center justify-center">
+                              <span className={`w-2 h-2 rounded-full ${statusConfig[child.status].dot}`} />
+                            </span>
+                            {statusConfig[child.status].label}
+                          </span>
+                          {isEntityUnmanaged(child) && (
+                            <span className="inline-flex items-center gap-1 pl-1.5 pr-2 py-1 rounded border border-[#cbd2dd] dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[11px] font-medium text-zinc-800 dark:text-zinc-200 leading-none flex-shrink-0">
+                              <CaptionsOff className="w-4 h-4 text-zinc-500 dark:text-zinc-400" strokeWidth={2} />
+                              Unmanaged
+                            </span>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onOpen(child); }}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                          >
+                            Open
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   );

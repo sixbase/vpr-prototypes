@@ -143,10 +143,15 @@ function productOfPage(id) {
 /* ---- nav rows (dark) ---- */
 function MenuItem({ icon, label, labelSize = 12, labelWeight = 500, color, iconColor = C.icon, fp, selected, onClick, collapsed, centerCollapsed, ariaCurrent, title }) {
   const Tag = onClick ? 'button' : 'div'
+  // Collapsed rail: expose the label as data-tip for the shell's right-anchored tooltip
+  // and drop the native (cursor-following) title so the two don't both appear.
+  const tipText = title || (typeof label === 'string' ? label : undefined)
   return (
     <Tag
       {...(onClick ? { type: 'button', onClick } : {})}
-      aria-current={ariaCurrent} title={title || (typeof label === 'string' ? label : undefined)}
+      aria-current={ariaCurrent}
+      title={collapsed ? undefined : tipText}
+      data-tip={collapsed ? tipText : undefined}
       className={['ob-mrow', selected && 'ob-mrow--sel'].filter(Boolean).join(' ')}
       style={{
         display: 'flex', alignItems: 'center', gap: 8, width: '100%', borderRadius: 5, border: 0,
@@ -191,13 +196,18 @@ function ProductHeader({ product, collapsed, open, onToggle, onOpen, bare, selec
   const locked = product.locked
   const action = locked ? undefined : (onToggle || onOpen)
   const Tag = action ? 'button' : 'div'
+  const fullTitle = locked ? `${product.label} — not subscribed` : onToggle ? `${open ? 'Collapse' : 'Expand'} ${product.label}` : `Open ${product.label}`
+  // Collapsed rail tooltip shows just the product (plus its locked state); the verbose
+  // expand/collapse hint stays as a native title in the expanded nav.
+  const tipText = locked ? `${product.label} — not subscribed` : product.label
   return (
     <Tag
       {...(action ? { type: 'button', onClick: action } : {})}
       className={['ob-phead', bare && 'ob-phead--bare', bare && selected && 'ob-phead--sel'].filter(Boolean).join(' ')}
       aria-expanded={onToggle ? open : undefined}
       aria-current={bare && selected ? 'page' : undefined}
-      title={locked ? `${product.label} — not subscribed` : onToggle ? `${open ? 'Collapse' : 'Expand'} ${product.label}` : `Open ${product.label}`}
+      title={collapsed ? undefined : fullTitle}
+      data-tip={collapsed ? tipText : undefined}
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%', border: 0, padding: 8, borderRadius: 5, cursor: action ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', transition: 'background-color 120ms ease' }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
         <span className="ob-ptile" style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
@@ -225,7 +235,7 @@ function ProductHeader({ product, collapsed, open, onToggle, onOpen, bare, selec
 /* ====================== The persistent left nav (dark) ====================== */
 function ShellNav({
   collapsed, page, openIds, onToggleProduct, onSelectItem, onOpenPortal, onToggleCollapse, dark, onToggleDark,
-  path, onNavigate, onSelectRoot, subscribed, loading, unmanaged,
+  path, onNavigate, onSelectRoot, subscribed, loading, unmanaged, showPartners = true,
 }) {
   const px = NAV_PAD_X
   // Subscribed products keep their order at the top; unsubscribed sink to the bottom
@@ -236,14 +246,35 @@ function ShellNav({
     ...PRODUCTS.filter((p) => !subscribed.has(p.id)),
   ]
   const subKey = orderedProducts.map((p) => p.id + (subscribed.has(p.id) ? '1' : '0')).join('|')
+
+  // Collapsed-rail tooltips. The native `title` follows the cursor and is clipped to the
+  // icons' meaning poorly; instead we delegate hover/focus over any [data-tip] row and float
+  // a single tooltip anchored just off the rail's right edge, vertically centered on the row.
+  const [tip, setTip] = useState(null) // { label, x, y }
+  useEffect(() => { if (!collapsed) setTip(null) }, [collapsed])
+  const showTip = (e) => {
+    if (!collapsed) return
+    const el = e.target.closest?.('[data-tip]')
+    const label = el?.getAttribute('data-tip')
+    if (!label) { setTip(null); return }
+    const r = el.getBoundingClientRect()
+    setTip({ label, x: r.right + 10, y: r.top + r.height / 2 })
+  }
+  const hideTip = () => setTip(null)
+
   return (
-    <nav className="msp-nav" style={{
-      width: collapsed ? SYM_W_COLLAPSED : SYM_W_EXPANDED, flexShrink: 0, background: C.menu,
-      borderRight: `1px solid ${C.menuBorder}`, display: 'flex', flexDirection: 'column',
-      fontFamily: 'var(--vds-font-sans)', transition: `width 220ms ${OB_EASE}`,
-    }}>
+    <nav className="msp-nav"
+      onMouseOver={showTip} onMouseLeave={hideTip} onFocusCapture={showTip} onBlurCapture={hideTip}
+      style={{
+        width: collapsed ? SYM_W_COLLAPSED : SYM_W_EXPANDED, flexShrink: 0, background: C.menu,
+        borderRight: `1px solid ${C.menuBorder}`, display: 'flex', flexDirection: 'column',
+        fontFamily: 'var(--vds-font-sans)', transition: `width 220ms ${OB_EASE}`,
+      }}>
       <div className="ob-scroll-dark" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0, padding: 0, overflowY: 'auto', overflowX: 'hidden' }}>
-        {/* PARTNERS — a Dashboard tile, then the scope navigator as a vertical breadcrumb */}
+        {/* PARTNERS — a Dashboard tile, then the scope navigator as a vertical breadcrumb.
+            Hidden in the single-tenant end-customer lens, which has no hierarchy. */}
+        {showPartners && (
+        <>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: `16px ${px}px` }}>
           <Eyebrow collapsed={collapsed}>PARTNERS</Eyebrow>
           {/* 8px inset matches the cards so the bare header's pill is contained too; kept in
@@ -263,11 +294,14 @@ function ShellNav({
             collapseTrail
             onSelectRoot={onSelectRoot}
             collapsed={collapsed}
+            tipAsData
             typeConfig={SCOPE_TYPE_CONFIG}
           />
         </div>
 
         <MenuDivider />
+        </>
+        )}
 
         {/* PRODUCTS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16 }}>
@@ -353,6 +387,20 @@ function ShellNav({
           <MenuItem collapsed={collapsed} centerCollapsed icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />} label="Collapse" color={C.ink} onClick={onToggleCollapse} />
         </div>
       </div>
+
+      {/* Collapsed-rail tooltip — a single floating label pinned to the right of the
+          hovered/focused icon (escapes the rail via fixed positioning). */}
+      {tip && (
+        <div role="tooltip" style={{
+          position: 'fixed', left: tip.x, top: tip.y, transform: 'translateY(-50%)', zIndex: 80,
+          pointerEvents: 'none', background: 'var(--vds-midnight-1000)', color: C.white,
+          fontSize: 12, fontWeight: 500, lineHeight: 1, padding: '7px 9px', borderRadius: 6,
+          whiteSpace: 'nowrap', boxShadow: 'var(--vds-shadow-lg)', border: '1px solid var(--vds-midnight-800)',
+        }}>
+          {tip.label}
+          <span aria-hidden style={{ position: 'absolute', right: '100%', top: '50%', transform: 'translateY(-50%)', width: 0, height: 0, borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderRight: '4px solid var(--vds-midnight-1000)' }} />
+        </div>
+      )}
     </nav>
   )
 }
@@ -377,13 +425,21 @@ const cardStyle = { flex: 1, minWidth: 0, background: C.card, borderRadius: 8 }
 function ContentCard({ page }) {
   const PageIcon = iconOf(page)
   const title = labelOf(page)
+  // On a product page the title icon is the product's own gradient tile (Figma 91:1167) —
+  // the same tile shown in the nav — instead of the generic grey page glyph. Non-product
+  // pages (Overview, footer) keep the neutral glyph square.
+  const pid = productOfPage(page)
   return (
     <div style={{ flex: 1, minWidth: 0, background: C.content, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <span style={{ width: 32, height: 32, borderRadius: 8, background: 'color-mix(in srgb, var(--vds-ink) 7%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <PageIcon size={18} style={{ color: 'var(--vds-ink-muted)' }} />
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          {pid ? (
+            <span style={{ flexShrink: 0, display: 'flex' }}><ProductTile glyph={PRODUCT_GLYPHS[pid]} size={32} /></span>
+          ) : (
+            <span style={{ width: 32, height: 32, borderRadius: 8, background: 'color-mix(in srgb, var(--vds-ink) 7%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <PageIcon size={18} style={{ color: 'var(--vds-ink-muted)' }} />
+            </span>
+          )}
           <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>{title}</span>
         </div>
         <HeaderButtons />
@@ -555,7 +611,7 @@ function PortalRow({ icon, label, labelSize = 12, labelWeight = 500, selected, c
 
 /* The full-portal left nav (light): exit-to-shell, a WORKING-IN customer banner (the
    reference point), a product switcher, and the product's deep sections. */
-function WorkspaceNav({ product, page, collapsed, scope, products, onExit, onSelectPage, onSwitchProduct, onToggleCollapse, dark, onToggleDark, style }) {
+function WorkspaceNav({ product, page, collapsed, scope, products, showScope = true, onExit, onSelectPage, onSwitchProduct, onToggleCollapse, dark, onToggleDark, style }) {
   const def = portalDef(product)
   const ProductGlyph = (PRODUCTS.find((p) => p.id === product) || {}).icon || Laptop
   const [switcherOpen, setSwitcherOpen] = useState(false)
@@ -569,8 +625,9 @@ function WorkspaceNav({ product, page, collapsed, scope, products, onExit, onSel
         <PortalRow collapsed={collapsed} label="Exit portal" labelWeight={500}
           onClick={onExit} ariaLabel="Exit portal" icon={<ChevronLeft size={16} />} />
 
-        {/* WORKING IN — the customer reference point, always visible in the portal */}
-        {!collapsed && (
+        {/* WORKING IN — the customer reference point, shown when a reseller is operating
+            inside a customer. The end customer is in its own portal, so it's omitted. */}
+        {showScope && !collapsed && (
           <div style={{ padding: `0 ${POR_PAD - 8}px` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, borderRadius: 8, background: 'color-mix(in srgb, var(--vds-ink) 5%, transparent)', border: `1px solid ${C.line}` }}>
               {scope.tile ? <img src={scope.tile} alt="" style={{ width: 28, height: 28, display: 'block', flexShrink: 0 }} />
@@ -649,24 +706,25 @@ function WorkspaceNav({ product, page, collapsed, scope, products, onExit, onSel
 
 /* The focus-mode portal: the product's deep nav + content, scoped to the current
    customer (shown in the nav banner AND the content reference header). */
-function PortalView({ product, page, collapsed, scope, products, onExit, onSelectPage, onSwitchProduct, onToggleCollapse, dark, onToggleDark }) {
+function PortalView({ product, page, collapsed, scope, products, showScope = true, onExit, onSelectPage, onSwitchProduct, onToggleCollapse, dark, onToggleDark }) {
   const def = portalDef(product)
   const ProductGlyph = (PRODUCTS.find((p) => p.id === product) || {}).icon || Laptop
   return (
     <div style={{ flex: 1, minWidth: 0, display: 'flex', background: C.topbar, padding: 8 }}>
       <WorkspaceNav
-        product={product} page={page} collapsed={collapsed} scope={scope} products={products}
+        product={product} page={page} collapsed={collapsed} scope={scope} products={products} showScope={showScope}
         onExit={onExit} onSelectPage={onSelectPage} onSwitchProduct={onSwitchProduct}
         onToggleCollapse={onToggleCollapse} dark={dark} onToggleDark={onToggleDark}
         style={{ borderRadius: '16px 0 0 16px' }}
       />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: C.content, borderRadius: '0 16px 16px 0', overflow: 'hidden' }}>
-        {/* customer + product reference header — the "which customer am I working for" cue */}
+        {/* customer + product reference header — the "which customer am I working for" cue.
+            The end customer is in its own portal, so only the product is shown. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 32px', flexShrink: 0, background: 'var(--vds-surface)', borderBottom: `1px solid ${C.line}` }}>
-          {scope.tile ? <img src={scope.tile} alt="" style={{ width: 24, height: 24, display: 'block', flexShrink: 0 }} />
-            : <span style={{ width: 24, height: 24, borderRadius: 6, background: 'color-mix(in srgb, var(--vds-ink) 10%, transparent)', flexShrink: 0 }} />}
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--vds-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scope.name}</span>
-          <span style={{ color: C.portalEyebrow, fontSize: 14 }}>›</span>
+          {showScope && (scope.tile ? <img src={scope.tile} alt="" style={{ width: 24, height: 24, display: 'block', flexShrink: 0 }} />
+            : <span style={{ width: 24, height: 24, borderRadius: 6, background: 'color-mix(in srgb, var(--vds-ink) 10%, transparent)', flexShrink: 0 }} />)}
+          {showScope && <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--vds-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scope.name}</span>}
+          {showScope && <span style={{ color: C.portalEyebrow, fontSize: 14 }}>›</span>}
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: C.portalInk, flexShrink: 0 }}>
             <ProductGlyph size={15} />
             <span style={{ fontSize: 13, fontWeight: 500 }}>{def.label} Full Portal</span>
@@ -681,10 +739,49 @@ function PortalView({ product, page, collapsed, scope, products, onExit, onSelec
   )
 }
 
+/* ---- Persona toggle (top chrome) — flips the shell between the two demo lenses:
+   the RESELLER/MSP view (scope tree + customers + per-customer products) and the
+   single-tenant END CUSTOMER view (products only, no hierarchy). UC3 (reseller inside a
+   customer) is just the reseller lens after drilling in, so it needs no third state. */
+const PERSONAS = [
+  { id: 'reseller', label: 'Reseller' },
+  { id: 'customer', label: 'End customer' },
+]
+function PersonaToggle({ persona, onPick }) {
+  return (
+    <div role="radiogroup" aria-label="Demo persona" style={{
+      display: 'flex', alignItems: 'center', gap: 2, height: 32, padding: 2, borderRadius: 8,
+      border: '1px solid var(--vds-midnight-700)', background: 'var(--vds-midnight-900)',
+    }}>
+      {PERSONAS.map((p) => {
+        const cur = p.id === persona
+        return (
+          <button key={p.id} type="button" role="radio" aria-checked={cur}
+            onClick={() => { if (!cur) onPick(p.id) }}
+            style={{
+              height: 26, padding: '0 12px', borderRadius: 6, border: 0, cursor: cur ? 'default' : 'pointer',
+              background: cur ? 'var(--nav-accent)' : 'transparent',
+              color: cur ? 'var(--vds-white)' : 'var(--vds-midnight-300)',
+              fontFamily: 'inherit', fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', transition: 'background-color 120ms ease, color 120ms ease',
+            }}>
+            {p.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// The single end-customer tenant the UC1 lens represents. Its id seeds the same hashed
+// subscription profile the reseller lens uses per-customer, so the products feel real.
+const CUSTOMER_TENANT = { id: 'acme-corp', name: 'Acme Corp' }
+
 function ShellInner() {
   const { path, navigate } = useScope()
 
   const [brand, setBrand] = useBrand()
+  const [persona, setPersona] = useState('reseller')
+  const isCustomer = persona === 'customer'
   const [dark, setDark] = useState(false)
   const [provModal, setProvModal] = useState(null)
   const [toast, setToast] = useState(null)
@@ -698,13 +795,15 @@ function ShellInner() {
   // scope tree navigates (back to the list) or when Dashboard (the fixed overview) is opened.
   const [customerDetail, setCustomerDetail] = useState(null)
 
-  // The scoped entity drives the faked product subscriptions shown in the nav.
-  const leafId = path.at(-1)?.id ?? 'root'
+  // The scoped entity drives the faked product subscriptions shown in the nav. In the
+  // end-customer lens there's no hierarchy, so the fixed tenant id seeds the profile.
+  const leafId = isCustomer ? CUSTOMER_TENANT.id : (path.at(-1)?.id ?? 'root')
   const subscribed = subscriptionFor(leafId)
   // An UNMANAGED entity has nothing to manage — its products never appear in the nav.
-  // Covers unmanaged customers, reseller partners, and unmanaged distributors.
-  const leaf = path.at(-1)
-  const leafUnmanaged = isEntityUnmanaged(leaf)
+  // Covers unmanaged customers, reseller partners, and unmanaged distributors. The end
+  // customer always has its own managed products.
+  const leaf = isCustomer ? null : path.at(-1)
+  const leafUnmanaged = isCustomer ? false : isEntityUnmanaged(leaf)
 
   useEffect(() => { document.documentElement.classList.toggle('dark', dark) }, [dark])
 
@@ -713,8 +812,8 @@ function ShellInner() {
   // you never sit on a product that isn't shown.
   useEffect(() => {
     const owner = productOfPage(page)
-    if (owner && (leafUnmanaged || !subscriptionFor(leafId).has(owner))) setPage('dashboard')
-  }, [leafId, page, leafUnmanaged])
+    if (owner && (leafUnmanaged || !subscriptionFor(leafId).has(owner))) setPage(isCustomer ? 'products-overview' : 'dashboard')
+  }, [leafId, page, leafUnmanaged, isCustomer])
 
   // Simulated "loading this customer's subscriptions": on a scope change, show the nav
   // skeleton briefly so the menu change reads as a fetch (not an instant swap).
@@ -735,8 +834,22 @@ function ShellInner() {
   const [portalPage, setPortalPage] = useState(null)
   const [portalCollapsed, setPortalCollapsed] = useState(false)
   const openPortalFor = (pid) => { setOpenPortal(pid); setPortalPage(portalDef(pid).defaultPage) }
-  const scope = toScope(path)
+  const scope = isCustomer
+    ? { key: CUSTOMER_TENANT.id, name: CUSTOMER_TENANT.name, tile: null, icon: Boxes, depth: 0 }
+    : toScope(path)
   const portalProducts = PRODUCTS.filter((p) => subscribed.has(p.id))
+
+  // Flip the demo lens: reset scope + any open drawers/portal, and land on the lens's
+  // home page (reseller → Performance dashboard; end customer → products Overview).
+  const switchPersona = (next) => {
+    if (next === persona) return
+    setPersona(next)
+    setOpenPortal(null)
+    setCustomerDetail(null)
+    setCustomerDrawer(null)
+    navigate([])
+    setPage(next === 'customer' ? 'products-overview' : 'dashboard')
+  }
 
   const openModal = (type, contextEntity = null, availableTypes = null) => setProvModal({ type, contextEntity, availableTypes })
 
@@ -747,7 +860,8 @@ function ShellInner() {
         <span style={{ display: 'flex', alignItems: 'center', paddingLeft: 19, color: C.white }}>
           <BrandLogo brand={brand} />
         </span>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: 16 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, paddingRight: 16 }}>
+          <PersonaToggle persona={persona} onPick={switchPersona} />
           <BrandPicker brand={brand} onPick={setBrand} />
         </div>
       </div>
@@ -756,8 +870,8 @@ function ShellInner() {
         {openPortal ? (
           <PortalView
             product={openPortal} page={portalPage} collapsed={portalCollapsed}
-            scope={scope} products={portalProducts}
-            onExit={() => setOpenPortal(null)}
+            scope={scope} products={portalProducts} showScope={!isCustomer}
+            onExit={() => { setOpenPortal(null); if (isCustomer) setPage('products-overview') }}
             onSelectPage={setPortalPage}
             onSwitchProduct={openPortalFor}
             onToggleCollapse={() => setPortalCollapsed((c) => !c)}
@@ -784,6 +898,7 @@ function ShellInner() {
           }}
           onSelectRoot={() => { navigate([]); setCustomerDetail(null); setPage('customers') }}
           subscribed={subscribed} loading={navLoading} unmanaged={leafUnmanaged}
+          showPartners={!isCustomer}
         />
 
         {/* content column (Figma 73:1278): an 8px navy frame, the white entity bar with
@@ -792,9 +907,10 @@ function ShellInner() {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
             {/* Scope/entity bar — only on product pages (reached from the product menu). The
                 Dashboard and Customers partner pages carry their own header, so the bar is
-                hidden there and the body takes over the rounded top-left corner. */}
-            {page !== 'customers' && page !== 'dashboard' && <ScopeHeader path={path} />}
-            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', background: C.content, ...((page === 'customers' || page === 'dashboard') ? { borderRadius: '32px 0 0 0', overflow: 'hidden' } : {}) }}>
+                hidden there and the body takes over the rounded top-left corner. The
+                end-customer lens is single-tenant (no scope), so the bar never shows. */}
+            {!isCustomer && page !== 'customers' && page !== 'dashboard' && <ScopeHeader path={path} />}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative', background: C.content, ...((isCustomer || page === 'customers' || page === 'dashboard') ? { borderRadius: '32px 0 0 0', overflow: 'hidden' } : {}) }}>
               {page === 'dashboard' ? (
                 <div className="shell-customers" style={{ flex: 1, minWidth: 0, background: C.content, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

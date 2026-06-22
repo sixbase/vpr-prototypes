@@ -144,6 +144,26 @@ html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 .ob-scroll-dark, .ob-scroll-light { scrollbar-width: none; -ms-overflow-style: none; }
 .ob-scroll-dark::-webkit-scrollbar, .ob-scroll-light::-webkit-scrollbar { width: 0; height: 0; }
 
+/* Customers / Performance list cards — a tidy scrollbar that sits cleanly inside the
+   rounded card. The browser default is a translucent thumb flush to the card's right
+   edge: the rounded `overflow:hidden` corner clips its square track, and the row/header
+   rules bleed through the see-through thumb while scrolling — reading as a scroll artifact.
+   Here the thumb is opaque (no bleed-through) and inset via a transparent border so it
+   floats off the rounded corner. Theme-adaptive via ink/surface tokens. */
+.shell-customers .overflow-y-auto { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--vds-ink) 22%, var(--vds-surface)) transparent; }
+.shell-customers .overflow-y-auto::-webkit-scrollbar { width: 11px; height: 11px; }
+.shell-customers .overflow-y-auto::-webkit-scrollbar-track { background: transparent; }
+.shell-customers .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--vds-ink) 20%, var(--vds-surface));
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.shell-customers .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--vds-ink) 34%, var(--vds-surface));
+  background-clip: padding-box;
+}
+
 /* ============================================================================
    ScopeTree — the vertical scope breadcrumb in the MSP left nav (Figma 73:350).
    Chrome colors use the fixed midnight ramp (theme-stable, always-navy nav).
