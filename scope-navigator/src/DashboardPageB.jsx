@@ -346,7 +346,7 @@ export function EntityDataDrawer({ entity, siblings = [], showFuture = false, on
             crumbs={crumbs}
             onBack={back}
             showOpen={!!onOpenEntity}
-            onOpen={() => onOpenEntity(shownEntity)}
+            onOpen={() => onOpenEntity(stack.map((s) => s.entity))}
           />
           <div className="flex-1 min-h-0">
             <DrawerEntityDetail

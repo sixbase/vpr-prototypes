@@ -246,7 +246,7 @@ function CustomerGrowthSection({ entityId, period, hasChildren }) {
       {/* Sparkline — always visible */}
       {!expanded && (
         <div className="px-4 pb-3 h-12">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" debounce={200}>
             <AreaChart data={growthData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
@@ -268,7 +268,7 @@ function CustomerGrowthSection({ entityId, period, hasChildren }) {
             <span><span className="inline-block w-2 h-2 rounded-sm bg-rose-500 mr-1" />{totalChurned} churned</span>
           </div>
           <div className="h-32">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={200}>
               <BarChart data={growthData} margin={{ top: 4, right: 0, bottom: 0, left: -20 }}>
                 <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--vds-ink-subtle)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: 'var(--vds-ink-subtle)' }} axisLine={false} tickLine={false} />
@@ -742,7 +742,7 @@ function ComplianceDonut({ score }) {
   const displayScore = useCountUp(score);
   return (
     <div className="relative w-16 h-16 flex-shrink-0">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" debounce={200}>
         <PieChart>
           <Pie data={data} innerRadius={20} outerRadius={28} startAngle={90} endAngle={-270} dataKey="value" stroke="none">
             <Cell fill={score >= 80 ? 'var(--vds-emerald-500)' : score >= 60 ? 'var(--vds-amber-500)' : 'var(--vds-rose-500)'} />
@@ -1092,7 +1092,7 @@ function MetricCell({ label, value, sparkSeed, strokeColor, period }) {
       </div>
       {sparkData && (
         <div className="h-7 mt-3.5 -ml-0.5">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" debounce={200}>
             <LineChart data={sparkData} margin={{ top: 2, bottom: 2, left: 0, right: 0 }}>
               <Line type="monotone" dataKey="v" stroke={strokeColor} strokeWidth={1.5} dot={false} isAnimationActive animationDuration={800} animationEasing="ease-out" />
             </LineChart>
@@ -1418,7 +1418,7 @@ function SummaryStatCard({ label, value, format, sparkSeed, period, variant }) {
         </div>
         {sparkSeed && (
           <div className="w-16 h-6 flex-shrink-0 mt-1">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={200}>
               <LineChart data={sparkData}>
                 <Line type="monotone" dataKey="v" stroke="var(--vds-ink-subtle)" strokeWidth={1.5} dot={false} isAnimationActive animationDuration={800} animationEasing="ease-out" />
               </LineChart>
@@ -1707,7 +1707,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onOpenEnti
                         <span className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 tabular-nums">${(biz.mrr || 0).toLocaleString()}</span>
                         <span className="text-[11px] text-zinc-400 dark:text-zinc-500">/mo</span>
                         <div className="w-16 h-5 flex-shrink-0">
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" debounce={200}>
                             <LineChart data={generateSparkline(entity.id + 'mrr', biz.mrr || 0, period)}>
                               <Line type="monotone" dataKey="v" stroke="var(--vds-emerald-500)" strokeWidth={1.5} dot={false} isAnimationActive animationDuration={800} animationEasing="ease-out" />
                             </LineChart>
@@ -1987,7 +1987,7 @@ export default function EntityDetail({ entity, siblings, onDrillDown, onOpenEnti
           {showFuture && <div>
             <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Performance over time</span>
             <div className="h-48 mt-2">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" debounce={200}>
                 <AreaChart data={generatePerformanceData(entity.id, activeProducts, period)} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
                   <defs>
                     {activeProducts.map(p => (

@@ -13,6 +13,7 @@ import resellerTile from '../assets/entity/reseller.svg'
 import customerTile from '../assets/entity/customer.svg'
 import { useBrand, brandStyleVars, BrandLogo, BrandPicker } from './branding.jsx'
 import { mockData } from '../data'
+import { isEntityUnmanaged } from '../config'
 import { ProvisioningModal, SuccessToast } from '../ProvisioningModal'
 import CustomerManagementPageB from '../CustomerManagementPageB'
 import { ChildrenListView } from '../EntityDetail.jsx'
@@ -55,9 +56,13 @@ const C = {
 }
 
 const NAV_PAD_X = 16
-const SYM_W_COLLAPSED = 80
+// Collapsed rail centers the x=48 icon column (2 × 48), so icons keep the EXACT same x
+// as the expanded nav — they never slide horizontally on collapse/expand.
+const SYM_W_COLLAPSED = 96
 const SYM_W_EXPANDED = 242
 const OB_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)'
+// Card padding 8 insets every child (header pill + sub-items) from the card edges, so the
+// header's hover/selected pill is visibly contained by the card rather than reaching its edges.
 const PRODUCT_CARD = { background: 'var(--vds-midnight-1000)', borderRadius: 8, padding: 8, display: 'flex', flexDirection: 'column', gap: 8 }
 // Full-portal nav widths (match the original Symphony workspace nav).
 const POR_PAD = 32
@@ -107,7 +112,7 @@ const FOOTER = [
 const PRODUCTS_OVERVIEW = { id: 'products-overview', label: 'Overview', icon: Boxes, Tile: OverviewTile }
 // PARTNERS Dashboard tile — bare button above the scope tree; opens the My Accounts
 // dashboard (the content the Customers scope-tree root used to host).
-const PARTNER_DASHBOARD = { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, Tile: (props) => <DashboardTile {...props} outline /> }
+const PARTNER_DASHBOARD = { id: 'dashboard', label: 'Performance', icon: LayoutDashboard, Tile: (props) => <DashboardTile {...props} outline /> }
 
 // ---- Faked per-customer subscriptions ----
 // We don't have real entitlement data, so the Symphony nav's PRODUCTS section is
@@ -141,11 +146,11 @@ function MenuItem({ icon, label, labelSize = 12, labelWeight = 500, color, iconC
   return (
     <Tag
       {...(onClick ? { type: 'button', onClick } : {})}
-      aria-current={ariaCurrent} title={title}
+      aria-current={ariaCurrent} title={title || (typeof label === 'string' ? label : undefined)}
       className={['ob-mrow', selected && 'ob-mrow--sel'].filter(Boolean).join(' ')}
       style={{
         display: 'flex', alignItems: 'center', gap: 8, width: '100%', borderRadius: 5, border: 0,
-        padding: centerCollapsed && collapsed ? '8px 16px' : '8px 12px 8px 8px',
+        padding: centerCollapsed && collapsed ? '8px 16px' : '8px 12px 8px 16px',
         background: selected ? C.selected : undefined,
         cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', transition: `background-color 120ms ease, padding 220ms ${OB_EASE}`,
       }}
@@ -193,7 +198,7 @@ function ProductHeader({ product, collapsed, open, onToggle, onOpen, bare, selec
       aria-expanded={onToggle ? open : undefined}
       aria-current={bare && selected ? 'page' : undefined}
       title={locked ? `${product.label} — not subscribed` : onToggle ? `${open ? 'Collapse' : 'Expand'} ${product.label}` : `Open ${product.label}`}
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%', border: 0, padding: bare ? 8 : 0, borderRadius: 5, cursor: action ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', transition: 'background-color 120ms ease' }}>
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%', border: 0, padding: 8, borderRadius: 5, cursor: action ? 'pointer' : 'default', fontFamily: 'inherit', textAlign: 'left', transition: 'background-color 120ms ease' }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
         <span className="ob-ptile" style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
           {product.Tile
@@ -203,7 +208,8 @@ function ProductHeader({ product, collapsed, open, onToggle, onOpen, bare, selec
             : <img src={product.tileAsset} alt="" style={{ width: 32, height: 32, display: 'block' }} />}
           {locked && <img src={lockBadge} alt="" style={{ position: 'absolute', left: 20, top: 20, width: 16, height: 16 }} />}
         </span>
-        {!collapsed && <span style={{ fontSize: 14, fontWeight: 600, color: locked ? C.ink : C.white, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.label}</span>}
+        {/* Label fades + shrinks (not instant-removed) so nothing jumps on collapse/expand. */}
+        <span style={{ fontSize: 14, fontWeight: 600, color: locked ? C.ink : C.white, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: collapsed ? 0 : 160, opacity: collapsed ? 0 : 1, transition: `max-width 220ms ${OB_EASE}, opacity 150ms ease` }}>{product.label}</span>
       </span>
       {!collapsed && !locked && onToggle && (
         <span className="ob-chevc" aria-hidden="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 12, flexShrink: 0 }}>
@@ -219,7 +225,7 @@ function ProductHeader({ product, collapsed, open, onToggle, onOpen, bare, selec
 /* ====================== The persistent left nav (dark) ====================== */
 function ShellNav({
   collapsed, page, openIds, onToggleProduct, onSelectItem, onOpenPortal, onToggleCollapse, dark, onToggleDark,
-  path, onNavigate, onSelectRoot, subscribed, loading,
+  path, onNavigate, onSelectRoot, subscribed, loading, unmanaged,
 }) {
   const px = NAV_PAD_X
   // Subscribed products keep their order at the top; unsubscribed sink to the bottom
@@ -231,7 +237,7 @@ function ShellNav({
   ]
   const subKey = orderedProducts.map((p) => p.id + (subscribed.has(p.id) ? '1' : '0')).join('|')
   return (
-    <nav style={{
+    <nav className="msp-nav" style={{
       width: collapsed ? SYM_W_COLLAPSED : SYM_W_EXPANDED, flexShrink: 0, background: C.menu,
       borderRight: `1px solid ${C.menuBorder}`, display: 'flex', flexDirection: 'column',
       fontFamily: 'var(--vds-font-sans)', transition: `width 220ms ${OB_EASE}`,
@@ -240,8 +246,12 @@ function ShellNav({
         {/* PARTNERS — a Dashboard tile, then the scope navigator as a vertical breadcrumb */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: `16px ${px}px` }}>
           <Eyebrow collapsed={collapsed}>PARTNERS</Eyebrow>
-          <ProductHeader product={PARTNER_DASHBOARD} collapsed={collapsed} bare
-            selected={page === 'dashboard'} onOpen={() => onSelectItem('dashboard')} />
+          {/* 8px inset matches the cards so the bare header's pill is contained too; kept in
+              both states so the icon never shifts x on collapse/expand. */}
+          <div style={{ padding: 8 }}>
+            <ProductHeader product={PARTNER_DASHBOARD} collapsed={collapsed} bare
+              selected={page === 'dashboard'} onOpen={() => onSelectItem('dashboard')} />
+          </div>
           <ScopeTree
             path={path}
             onNavigate={onNavigate}
@@ -250,6 +260,7 @@ function ShellNav({
             rootTileNode={<CustomersTile className="stree-tile" />}
             rootSelected={page === 'customers' && path.length === 0}
             rootDrillable={false}
+            collapseTrail
             onSelectRoot={onSelectRoot}
             collapsed={collapsed}
             typeConfig={SCOPE_TYPE_CONFIG}
@@ -261,9 +272,20 @@ function ShellNav({
         {/* PRODUCTS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16 }}>
           <Eyebrow collapsed={collapsed}>PRODUCTS</Eyebrow>
-          <ProductHeader product={PRODUCTS_OVERVIEW} collapsed={collapsed} bare
-            selected={page === PRODUCTS_OVERVIEW.id}
-            onOpen={() => onSelectItem(PRODUCTS_OVERVIEW.id)} />
+          {unmanaged ? (
+            /* Unmanaged entity (customer, reseller, or distributor) — nothing to manage. */
+            !collapsed && (
+              <p style={{ margin: 0, padding: '4px 8px', fontSize: 12, lineHeight: 1.45, color: C.inkDim }}>
+                No managed products — this account is unmanaged.
+              </p>
+            )
+          ) : (
+          <>
+          <div style={{ padding: 8 }}>
+            <ProductHeader product={PRODUCTS_OVERVIEW} collapsed={collapsed} bare
+              selected={page === PRODUCTS_OVERVIEW.id}
+              onOpen={() => onSelectItem(PRODUCTS_OVERVIEW.id)} />
+          </div>
           {loading ? (
             <div key="skel" className="nav-products-anim" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[80, 96, 64, 84, 72].map((w, i) => (
@@ -305,6 +327,8 @@ function ShellNav({
             })}
           </div>
           )}
+          </>
+          )}
         </div>
       </div>
 
@@ -313,7 +337,10 @@ function ShellNav({
         <MenuDivider />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: `16px ${px}px` }}>
           <Eyebrow collapsed={collapsed}>OTHER</Eyebrow>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {/* 8px inset mirrors the product cards' inner padding so these 16px glyphs
+              center on the same x-axis (48px) as the 32px tiles above — kept in both
+              states so the icons never shift x on collapse/expand. */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, padding: '0 8px' }}>
             {FOOTER.map((f) => (
               <MenuItem key={f.id} collapsed={collapsed} centerCollapsed icon={<f.icon size={16} />} label={f.label} color={C.ink}
                 selected={page === f.id} onClick={() => onSelectItem(f.id)} />
@@ -321,7 +348,7 @@ function ShellNav({
           </div>
         </div>
         <MenuDivider />
-        <div style={{ display: 'flex', flexDirection: 'column', padding: `8px ${px}px` }}>
+        <div style={{ display: 'flex', flexDirection: 'column', padding: `8px ${px + 8}px` }}>
           <MenuItem collapsed={collapsed} centerCollapsed icon={dark ? <Sun size={16} /> : <Moon size={16} />} label={dark ? 'Light mode' : 'Dark mode'} color={C.ink} onClick={onToggleDark} />
           <MenuItem collapsed={collapsed} centerCollapsed icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />} label="Collapse" color={C.ink} onClick={onToggleCollapse} />
         </div>
@@ -374,7 +401,7 @@ function ContentCard({ page }) {
 }
 
 function labelOf(id) {
-  if (id === 'dashboard') return 'Dashboard'
+  if (id === 'dashboard') return 'Performance'
   if (id === 'customers') return 'Customers'
   for (const p of PRODUCTS) for (const it of p.items || []) if (it.id === id) return it.label
   for (const key in PORTALS) for (const s of PORTALS[key].sections) for (const it of s.items) if (it.id === id) return it.label
@@ -674,15 +701,20 @@ function ShellInner() {
   // The scoped entity drives the faked product subscriptions shown in the nav.
   const leafId = path.at(-1)?.id ?? 'root'
   const subscribed = subscriptionFor(leafId)
+  // An UNMANAGED entity has nothing to manage — its products never appear in the nav.
+  // Covers unmanaged customers, reseller partners, and unmanaged distributors.
+  const leaf = path.at(-1)
+  const leafUnmanaged = isEntityUnmanaged(leaf)
 
   useEffect(() => { document.documentElement.classList.toggle('dark', dark) }, [dark])
 
-  // If scoping into a customer that doesn't subscribe to the product you're viewing,
-  // fall back to that customer's dashboard so you never sit on a locked product.
+  // If scoping into a customer that doesn't subscribe to the product you're viewing
+  // (or an unmanaged customer with no products at all), fall back to its dashboard so
+  // you never sit on a product that isn't shown.
   useEffect(() => {
     const owner = productOfPage(page)
-    if (owner && !subscriptionFor(leafId).has(owner)) setPage('dashboard')
-  }, [leafId, page])
+    if (owner && (leafUnmanaged || !subscriptionFor(leafId).has(owner))) setPage('dashboard')
+  }, [leafId, page, leafUnmanaged])
 
   // Simulated "loading this customer's subscriptions": on a scope change, show the nav
   // skeleton briefly so the menu change reads as a fetch (not an instant swap).
@@ -747,13 +779,11 @@ function ShellInner() {
           dark={dark} onToggleDark={() => setDark((d) => !d)}
           path={path} onNavigate={(nextPath) => {
             navigate(nextPath); setPage('customers')
-            // Clicking the already-selected leaf (same path) opens that customer's detail;
-            // navigating up to an ancestor (shorter path) returns to the browse list.
-            const sameLeaf = nextPath.length > 0 && nextPath.length === path.length && nextPath.at(-1)?.id === path.at(-1)?.id
-            setCustomerDetail(sameLeaf ? nextPath.at(-1) : null)
+            // Clicking any node in the vertical tree opens that node's detail page.
+            setCustomerDetail(nextPath.length > 0 ? nextPath.at(-1) : null)
           }}
           onSelectRoot={() => { navigate([]); setCustomerDetail(null); setPage('customers') }}
-          subscribed={subscribed} loading={navLoading}
+          subscribed={subscribed} loading={navLoading} unmanaged={leafUnmanaged}
         />
 
         {/* content column (Figma 73:1278): an 8px navy frame, the white entity bar with
@@ -768,7 +798,7 @@ function ShellInner() {
               {page === 'dashboard' ? (
                 <div className="shell-customers" style={{ flex: 1, minWidth: 0, background: C.content, padding: 32, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>Dashboard</span>
+                    <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>Performance</span>
                   </div>
                   <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', margin: '0 -24px -20px' }}>
                     <CustomerManagementPageB openModal={openModal} showFuture={false} rootNameOverride="My Accounts" hideRootStatus />
@@ -843,7 +873,12 @@ function ShellInner() {
       <EntityDataDrawer
         entity={customerDrawer}
         siblings={path.at(-1)?.children ?? mockData}
-        onOpenEntity={(e) => { navigate([...path, e]); setCustomerDetail(e); setCustomerDrawer(null); setPage('customers') }}
+        onOpenEntity={(trail) => {
+          // The drawer's trail (clicked row → drilled descendants) appends to the current
+          // scope, so the path reflects the full ancestry (powers "View relationship").
+          const full = [...path, ...trail]
+          navigate(full); setCustomerDetail(full.at(-1)); setCustomerDrawer(null); setPage('customers')
+        }}
         onClose={() => setCustomerDrawer(null)}
       />
     </div>

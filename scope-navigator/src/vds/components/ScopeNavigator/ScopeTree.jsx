@@ -48,6 +48,7 @@ export function ScopeTree({
   rootTileNode,
   rootSelected = false,
   rootDrillable = true,
+  collapseTrail = false,
   onSelectRoot,
   collapsed = false,
   typeConfig = defaultTypeConfig,
@@ -60,6 +61,12 @@ export function ScopeTree({
   // The single open flyout: { id, top, left, items, header, onSelect, currentEntityId }.
   const [flyout, setFlyout] = useState(null)
   const close = () => setFlyout(null)
+
+  // collapseTrail mode (MSP "customer button"): the trail is condensed to just the
+  // current leaf, with a "View relationship" toggle that reveals the full ancestor
+  // path. The toggle persists — it stays expanded/collapsed across scope changes
+  // until the user flips it.
+  const [relOpen, setRelOpen] = useState(false)
 
   // Open a fixed right-flyout next to the clicked row. We anchor off the row's
   // <nav> ancestor's right edge so the panel always clears the whole rail
@@ -124,9 +131,52 @@ export function ScopeTree({
   })
 
   const hasTrail = pathSegs.length > 0
+  // "View relationship" only matters when there are ancestors to reveal (>1 level).
+  // Works collapsed too (renders as a compact centered chevron) so the vertical scope
+  // can be expanded/collapsed in the icon rail as well.
+  const showRelToggle = collapseTrail && path.length > 1
+  // In collapse mode the ancestors animate open/closed; the leaf is always shown.
+  const ancestorSegs = showRelToggle ? pathSegs.slice(0, -1) : []
+  const leafOnlySegs = showRelToggle ? pathSegs.slice(-1) : pathSegs
+
+  const renderSeg = (seg) => {
+    const cfg = typeConfig[seg.entityType]
+    const hasDropdown = seg.dropdownItems?.length > 0
+    const isOpen = flyout?.id === seg.id
+    return (
+      <div
+        key={seg.id}
+        data-scope-row
+        className={cx('stree-row', seg.isActive && 'stree-row--active', isOpen && 'stree-row--open')}
+      >
+        <button
+          type="button"
+          className="stree-main"
+          onClick={seg.onMain}
+          disabled={!seg.onMain}
+          aria-current={seg.isActive ? 'page' : undefined}
+          title={seg.label}
+        >
+          <TypeChip tone={cfg?.tone} icon={cfg?.icon} tile={cfg?.tile} size="md" />
+          <span className={cx('stree-label', seg.isActive && 'stree-label--active')}>{seg.label}</span>
+        </button>
+        {!collapsed && hasDropdown && (
+          <button
+            type="button"
+            className={cx('stree-caret', isOpen && 'stree-caret--open')}
+            onClick={(e) => openFlyout(e, seg)}
+            aria-label="Switch this scope level"
+            aria-expanded={isOpen}
+          >
+            <ChevronDown size={12} />
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
-    <div className={cx('vds-scope-tree', collapsed && 'vds-scope-tree--collapsed')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div className={cx('vds-scope-tree', collapsed && 'vds-scope-tree--collapsed', collapseTrail && 'vds-scope-tree--card')} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {/* ---- root "Customers" row ---- */}
       <div data-scope-row className={cx('stree-row stree-row--root', rootSelected && 'stree-row--sel')}>
         <button
@@ -143,7 +193,7 @@ export function ScopeTree({
           ) : (
             <span className="stree-tile stree-tile--fallback" />
           )}
-          {!collapsed && <span className="stree-label stree-label--root">{rootLabel}</span>}
+          <span className="stree-label stree-label--root">{rootLabel}</span>
         </button>
         {!collapsed && rootDrillable && rootSeg.dropdownItems.length > 0 && (
           <button
@@ -160,49 +210,41 @@ export function ScopeTree({
 
       {/* ---- trail well (only when drilled) ---- */}
       {hasTrail && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: collapseTrail ? 2 : 8 }}>
         <div className="stree-well" style={{ position: 'relative' }}>
-          {!collapsed && (
-            <span className="stree-line" aria-hidden="true">
-              <svg preserveAspectRatio="none">
-                <line x1="1" y1="0" x2="1" y2="100%" />
-              </svg>
-            </span>
-          )}
-          {pathSegs.map((seg) => {
-            const cfg = typeConfig[seg.entityType]
-            const hasDropdown = seg.dropdownItems?.length > 0
-            const isOpen = flyout?.id === seg.id
-            return (
-              <div
-                key={seg.id}
-                data-scope-row
-                className={cx('stree-row', seg.isActive && 'stree-row--active', isOpen && 'stree-row--open')}
-              >
-                <button
-                  type="button"
-                  className="stree-main"
-                  onClick={seg.onMain}
-                  disabled={!seg.onMain}
-                  aria-current={seg.isActive ? 'page' : undefined}
-                  title={seg.label}
-                >
-                  <TypeChip tone={cfg?.tone} icon={cfg?.icon} tile={cfg?.tile} size="md" />
-                  {!collapsed && <span className={cx('stree-label', seg.isActive && 'stree-label--active')}>{seg.label}</span>}
-                </button>
-                {!collapsed && hasDropdown && (
-                  <button
-                    type="button"
-                    className={cx('stree-caret', isOpen && 'stree-caret--open')}
-                    onClick={(e) => openFlyout(e, seg)}
-                    aria-label="Switch this scope level"
-                    aria-expanded={isOpen}
-                  >
-                    <ChevronDown size={12} />
-                  </button>
-                )}
+          <span className="stree-line" aria-hidden="true" />
+          {showRelToggle ? (
+            <>
+              {/* Ancestors — accordion that animates open/closed (same 0fr↔1fr grid the
+                  product groups use). The leaf below is always shown. */}
+              <div style={{ display: 'grid', gridTemplateRows: relOpen ? '1fr' : '0fr', transition: 'grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1)' }}>
+                <div style={{ overflow: 'hidden', minHeight: 0 }} aria-hidden={!relOpen}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, opacity: relOpen ? 1 : 0, transition: 'opacity 180ms ease' }}>
+                    {ancestorSegs.map(renderSeg)}
+                  </div>
+                </div>
               </div>
-            )
-          })}
+              {leafOnlySegs.map(renderSeg)}
+            </>
+          ) : (
+            pathSegs.map(renderSeg)
+          )}
+        </div>
+        {/* "View relationship" — reveals the full ancestor path (only when >1 level). */}
+        {showRelToggle && (
+          <button
+            type="button"
+            className="stree-rel"
+            onClick={() => setRelOpen((o) => !o)}
+            aria-expanded={relOpen}
+            title={relOpen ? 'Hide Relationship' : 'View Relationship'}
+          >
+            <span className={cx('stree-rel__icon', relOpen && 'stree-rel__icon--open')}>
+              <ChevronDown size={16} />
+            </span>
+            <span className="stree-rel__label">{relOpen ? 'Hide Relationship' : 'View Relationship'}</span>
+          </button>
+        )}
         </div>
       )}
 

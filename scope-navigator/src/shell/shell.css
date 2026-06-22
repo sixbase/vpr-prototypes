@@ -32,6 +32,17 @@ button.ob-phead:hover .ob-ptile { transform: scale(1.1); }
 button.ob-phead:hover .ob-chevc { color: var(--vds-white); }
 .ob-phead--sel { background: var(--nav-accent); }   /* active bare button (Figma 53:8508) — follows brand */
 
+/* MSP nav: every clickable row (incl. product/Performance/Overview headers) gets a
+   midnight-800 hover fill, matching the menu rows and the scope-tree rows. */
+.msp-nav button.ob-phead:not(.ob-phead--sel):hover { background: var(--vds-midnight-800); }
+/* Selected headers/rows still respond to hover — a subtle darken of the active accent. */
+.msp-nav button.ob-phead--sel:hover,
+.msp-nav .stree-row--root.stree-row--sel:hover { background: color-mix(in srgb, var(--nav-accent), #000 12%); }
+/* On hover the pill fills with midnight-800, the same flat-tile color — lift the tile two
+   steps to midnight-600 so the Performance/Customers/Overview icons read clearly, not flat. */
+.msp-nav button.ob-phead--bare:not(.ob-phead--sel):hover,
+.msp-nav .stree-row--root:not(.stree-row--sel):hover { --nav-tile-bg: var(--vds-midnight-600); }
+
 /* Placeholder page-header buttons (Figma 53:8072): primary accent, slight darken on hover. */
 .ob-hbtn { transition: background-color 120ms ease; }
 .ob-hbtn:hover { background: color-mix(in srgb, var(--nav-accent) 88%, black) !important; }
@@ -141,8 +152,12 @@ html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 .stree-row { position: relative; z-index: 1; display: flex; align-items: center; gap: 16px; width: 100%; border-radius: 5px; background: transparent; transition: background-color 120ms ease; }
 .stree-row--root { padding: 8px; }
 .stree-row:not(.stree-row--root) { padding: 4px 8px 4px 4px; }
-.stree-row:not(.stree-row--active):hover,
+/* Every row — incl. the active/scoped leaf — gets the midnight-800 hover fill. */
+.stree-row:hover,
 .stree-row--open { background: var(--vds-midnight-800); }   /* #152E51 */
+/* Ancestor (non-active, non-root) labels brighten to white on hover, signalling they're
+   clickable to jump back to that level. */
+.stree-row:not(.stree-row--root):not(.stree-row--active):hover .stree-label { color: var(--vds-white); }
 .stree-row--root.stree-row--sel { background: var(--nav-accent); }    /* active — follows brand */
 
 .stree-main { display: flex; flex: 1; min-width: 0; align-items: center; gap: 8px; border: 0; background: transparent; padding: 0; font: inherit; text-align: left; cursor: pointer; color: inherit; }
@@ -150,7 +165,9 @@ html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 .stree-tile { width: 32px; height: 32px; display: block; flex-shrink: 0; }
 .stree-tile--fallback { border-radius: 6px; background: var(--vds-midnight-700); }
 
-.stree-label { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; font-weight: 500; color: var(--vds-midnight-400); }   /* ancestor = #618bc2 */
+/* Labels fade + shrink on collapse (max-width/opacity), exactly like the product and
+   menu-item labels — so nothing pops or jumps as the rail width animates. */
+.stree-label { min-width: 0; max-width: 150px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; font-weight: 500; color: var(--vds-midnight-400); transition: max-width 220ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms ease; }   /* ancestor = #618bc2 */
 .stree-label--root { font-size: 14px; font-weight: 600; color: var(--vds-white); }
 .stree-label--active { color: var(--vds-white); }
 /* The root tile scales up on hover, matching the product tiles. */
@@ -173,10 +190,38 @@ html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 .stree-well { background: var(--vds-midnight-1000); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
 /* The wrapper is a normal block sized by top/bottom (an inline <svg> ignores
    `bottom` and uses its intrinsic height, which overran the well). The svg fills it. */
-.stree-line { position: absolute; left: 23px; top: 24px; bottom: 24px; width: 2px; z-index: 0; }
-.stree-line svg { display: block; width: 2px; height: 100%; overflow: visible; }
-/* Round dots: a 0.01/4 dash with round caps renders as 2px circles (Figma 73:362). */
-.stree-line line { stroke: var(--vds-midnight-400); stroke-width: 2; stroke-dasharray: 0.01 4; stroke-linecap: round; }
+/* Round dots via a fixed-size CSS background (2px dot every 4px) — unlike an SVG line with
+   preserveAspectRatio:none, this does NOT stretch when the trail height animates, so the
+   dots stay put instead of crawling during the View/Hide-relationship transition. */
+.stree-line { position: absolute; left: 23px; top: 24px; bottom: 24px; width: 2px; z-index: 0;
+  background-image: radial-gradient(circle, var(--vds-midnight-400) 1px, transparent 1px);
+  background-size: 2px 4px; background-position: center top; background-repeat: repeat-y;
+  /* Paint the dotted gradient onto its own GPU layer so it isn't re-rasterized (and
+     doesn't blink) every frame while the rail width animates. */
+  transform: translateZ(0); }
+
+/* collapseTrail mode (Figma 91:1247) — the whole "customer button" is one recessed
+   card, like a product group: header + condensed trail (leaf) + "View relationship".
+   Padding 0 on the header so its 32px tile centers on the same x (24px from the card
+   edge) as the 24px trail tiles and the product-card headers. */
+.vds-scope-tree--card { background: var(--vds-midnight-1000); border-radius: 8px; padding: 8px; }
+.vds-scope-tree--card .stree-well { background: transparent; padding: 0; border-radius: 0; }
+/* Header pill is inset by the card's 8px padding (contained); padding 8 gives the 32px
+   tile a left gap inside the pill so it's centered on x=48 like every other icon. */
+.vds-scope-tree--card .stree-row--root { padding: 8px; }
+/* Re-center the dotted connector on the trail tiles (x=48). */
+.vds-scope-tree--card .stree-line { top: 16px; bottom: 16px; }
+/* Trail rows: left padding centers the 24px tile on x=48; right padding aligns the carets
+   with the product accordion chevrons. */
+.vds-scope-tree--card .stree-row:not(.stree-row--root) { padding-left: 12px; padding-right: 12px; }
+/* "View relationship" toggle row — mirrors the product "Full Portal" (fp) row:
+   dim icon that brightens to white on row hover, midnight-800 hover fill. */
+.stree-rel { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 12px 8px 16px; border: 0; border-radius: 5px; background: transparent; cursor: pointer; font: inherit; text-align: left; transition: background-color 120ms ease; }
+.stree-rel:hover { background: var(--vds-midnight-800); }
+.stree-rel__icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; color: var(--vds-midnight-600); flex-shrink: 0; transition: color 120ms ease, transform 150ms ease; }
+.stree-rel:hover .stree-rel__icon { color: var(--vds-white); }
+.stree-rel__icon--open { transform: rotate(180deg); }
+.stree-rel__label { max-width: 150px; overflow: hidden; white-space: nowrap; font-size: 11px; font-weight: 400; color: var(--vds-midnight-300); transition: max-width 220ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms ease; }
 
 /* PRODUCTS list re-enter animation when the scoped customer's subscriptions change. */
 @keyframes nav-products-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -196,11 +241,12 @@ html.dark .shell-root { --shell-canvas: var(--vds-midnight-1000, #07101f); }
 /* 24px chips in the trail (the shared chip ships md=28). */
 .vds-scope-tree .vds-scope__chip--md { width: 24px; height: 24px; }
 
-/* Collapsed rail: keep the entity tiles fixed in size and position so they
-   don't shrink or shift when the nav opens/closes (like the product icons).
-   The tiles are <img>s, so the reset's max-width:100% otherwise clamps them to
-   the narrow collapsed row; and flex:1 on .stree-main would stretch the row and
-   slide them off the rail's center axis. Pinning the button to its content keeps
-   each tile pinned to the same spot the expanded rail puts it. */
-.vds-scope-tree--collapsed .stree-main { flex: 0 0 auto; justify-content: center; }
-.vds-scope-tree--collapsed .vds-scope__chip { max-width: none; }
+/* The chip (entity tile) is a fixed-24px <img>; the reset's max-width:100% would clamp it
+   to 0 whenever its flex container momentarily measures 0 during the width animation —
+   that brief clamp was the ancestor tiles "flashing on and off" on collapse/expand. Pin
+   max-width to none ALWAYS so the tile holds 24px regardless of container width. */
+.vds-scope-tree .vds-scope__chip { max-width: none; }
+/* Every collapsing label fades the same way (max-width/opacity) — scope rows AND the
+   "View Relationship" toggle — so nothing pops while the rail width animates. */
+.vds-scope-tree--collapsed .stree-label,
+.vds-scope-tree--collapsed .stree-rel__label { max-width: 0; opacity: 0; }
