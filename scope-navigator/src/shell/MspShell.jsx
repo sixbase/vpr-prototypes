@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Mail, Send, Laptop, GraduationCap, Database, ScrollText, Radar, Settings,
-  FileText, ShieldCheck, Monitor, Bell, UserCog, User, ArrowUpRight,
+  FileText, ShieldCheck, Monitor, Bell, UserCog, User, Key, ArrowUpRight,
   PanelLeftClose, PanelLeftOpen, LayoutDashboard, Moon, Sun,
   Boxes, Store, Zap, ChevronLeft, ChevronRight, ChevronDown, Check,
 } from '@icons'
@@ -22,6 +22,7 @@ import { PORTALS } from './portalData.js'
 import lockBadge from './assets/lock-badge.svg'
 import { PRODUCT_GLYPHS } from './productGlyphs.js'
 import { ProductTile, OverviewTile, CustomersTile, DashboardTile } from './ProductTile.jsx'
+import { DevicesGlyph, PoliciesGlyph, IncidentsGlyph } from './pageGlyphs.jsx'
 import './shell.css'
 
 /* ============================================================================
@@ -107,6 +108,8 @@ const PRODUCTS = [
 const FOOTER = [
   { id: 'logs', label: 'Logs', icon: ScrollText },
   { id: 'admins', label: 'Admins', icon: UserCog },
+  { id: 'saml', label: 'SAML', icon: Key },
+  { id: 'roles', label: 'Roles', icon: ShieldCheck },
   { id: 'profile', label: 'Profile', icon: User },
 ]
 const PRODUCTS_OVERVIEW = { id: 'products-overview', label: 'Overview', icon: Boxes, Tile: OverviewTile }
@@ -426,10 +429,19 @@ function TitleIcon({ icon: Icon }) {
   return <Icon size={28} strokeWidth={1.75} style={{ color: 'var(--vds-ink-muted)', flexShrink: 0 }} />
 }
 
+// Pages whose heading uses the exact Vipre DS glyph (Figma 96:1428/1466/1508) instead of
+// the app's line icon. Rendered on the 48px artboard, so a larger size matches the frame.
+const PAGE_TITLE_GLYPHS = {
+  'edr-devices-s': DevicesGlyph,
+  'ss-policies': PoliciesGlyph,
+  'edr-incidents-s': IncidentsGlyph,
+}
+
 // Figma 73:1272-1277: borderless white cards on the grey body.
 const cardStyle = { flex: 1, minWidth: 0, background: C.card, borderRadius: 8 }
 function ContentCard({ page, path }) {
   const PageIcon = iconOf(page)
+  const ExactGlyph = PAGE_TITLE_GLYPHS[page]
   const title = labelOf(page)
   // The title icon is the page's own line glyph (Figma 96:1428) — bare, ink-muted, no
   // background tile. (pid is still resolved for the breadcrumb's product crumb.)
@@ -451,7 +463,9 @@ function ContentCard({ page, path }) {
       )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <TitleIcon icon={PageIcon} />
+          {ExactGlyph
+            ? <ExactGlyph size={40} style={{ color: 'var(--vds-ink-muted)', flexShrink: 0 }} />
+            : <TitleIcon icon={PageIcon} />}
           <span style={{ fontSize: 20, fontWeight: 500, color: 'var(--vds-ink)' }}>{title}</span>
         </div>
         <HeaderButtons />
