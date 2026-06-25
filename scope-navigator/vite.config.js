@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 import Icons from 'unplugin-icons/vite'
 
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/vpr-prototypes/scope-navigator/' : '/',
+  base: command === 'build' ? '/vipre-prototypes/scope-navigator/' : '/',
   plugins: [
     react(),
     tailwindcss(),
