@@ -49,9 +49,20 @@ const prototypes = [
     status: 'active',
     tags: ['React', 'Tailwind', 'Vite'],
   },
+  {
+    name: 'Consistency Audit',
+    description: 'Current-state UI consistency audit across Vipre products, built from 58 production screenshots. Lives in its own repo (vipre-audit).',
+    externalUrl: 'https://sixbase.github.io/vipre-audit/',
+    status: 'active',
+    tags: ['React', 'Vite', 'Separate repo'],
+  },
 ]
 
 function getPrototypeUrl(prototype) {
+  // External prototypes (their own repo/site) always link straight out.
+  if (prototype.externalUrl) {
+    return prototype.externalUrl
+  }
   const query = prototype.view ? `?view=${prototype.view}` : ''
   if (import.meta.env.DEV) {
     return `http://localhost:${prototype.port}/${query}`
