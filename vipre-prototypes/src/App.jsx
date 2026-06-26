@@ -1,8 +1,26 @@
 const prototypes = [
   {
-    name: 'MSP',
-    description: 'Scope Navigator — hierarchical scope navigation and entity management for MSP workflows.',
+    name: 'Scope Navigator',
+    description: 'Hierarchical scope navigation and entity management — the base MSP workflow shell.',
     slug: 'scope-navigator',
+    port: 5179,
+    status: 'active',
+    tags: ['React', 'Tailwind', 'Vite'],
+  },
+  {
+    name: 'MSP — Symphony side menu',
+    description: 'Scope navigator as a vertical breadcrumb (customer list) stacked inside the Symphony left nav.',
+    slug: 'scope-navigator',
+    view: 'msp',
+    port: 5179,
+    status: 'active',
+    tags: ['React', 'Tailwind', 'Vite'],
+  },
+  {
+    name: 'Symphony — top scope bar',
+    description: 'Symphony × Scope shell with the scope selector as a horizontal bar across the top.',
+    slug: 'scope-navigator',
+    view: 'shell',
     port: 5179,
     status: 'active',
     tags: ['React', 'Tailwind', 'Vite'],
@@ -34,10 +52,11 @@ const prototypes = [
 ]
 
 function getPrototypeUrl(prototype) {
+  const query = prototype.view ? `?view=${prototype.view}` : ''
   if (import.meta.env.DEV) {
-    return `http://localhost:${prototype.port}`
+    return `http://localhost:${prototype.port}/${query}`
   }
-  return `${import.meta.env.BASE_URL}${prototype.slug}/`
+  return `${import.meta.env.BASE_URL}${prototype.slug}/${query}`
 }
 
 function StatusBadge({ status }) {
